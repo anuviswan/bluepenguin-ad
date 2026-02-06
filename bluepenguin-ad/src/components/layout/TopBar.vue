@@ -1,6 +1,12 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 
+const props = defineProps<{
+  searchPlaceholder?: string;
+  actionText?: string;
+  onAction?: () => void;
+}>();
+
 const searchQuery = ref('');
 </script>
 
@@ -11,15 +17,15 @@ const searchQuery = ref('');
       <input 
         type="text" 
         v-model="searchQuery" 
-        placeholder="Search products, SKUs, materials..." 
+        :placeholder="searchPlaceholder || 'Search products, SKUs, materials...'" 
         class="search-input"
       />
     </div>
 
     <div class="actions">
-      <button class="btn-add">
+      <button class="btn-add" @click="onAction">
         <span class="material-icons-outlined">add</span>
-        <span>Add Product</span>
+        <span>{{ actionText || 'Add Product' }}</span>
       </button>
 
       <div class="user-profile">

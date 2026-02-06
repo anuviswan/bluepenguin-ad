@@ -1,22 +1,32 @@
 <script setup lang="ts">
+import { useRoute } from 'vue-router';
+
+const route = useRoute();
+
 interface NavItem {
   name: string;
   icon: string;
-  active: boolean;
+  path: string;
 }
 
 const navItems: NavItem[] = [
-  { name: 'Dashboard', icon: 'dashboard', active: true },
-  { name: 'Products', icon: 'shopping_bag', active: false },
-  { name: 'Categories', icon: 'category', active: false },
-  { name: 'Collections', icon: 'collections', active: false },
-  { name: 'Materials', icon: 'texture', active: false },
-  { name: 'Features', icon: 'auto_awesome', active: false },
-  { name: 'Inventory', icon: 'inventory', active: false },
-  { name: 'Media Library', icon: 'image', active: false },
-  { name: 'Orders', icon: 'receipt_long', active: false },
-  { name: 'Settings', icon: 'settings', active: false },
+  { name: 'Dashboard', icon: 'dashboard', path: '/' },
+  { name: 'Products', icon: 'shopping_bag', path: '/products' },
+  { name: 'Categories', icon: 'category', path: '/categories' },
+  { name: 'Collections', icon: 'collections', path: '/collections' },
+  { name: 'Materials', icon: 'texture', path: '/materials' },
+  { name: 'Features', icon: 'auto_awesome', path: '/features' },
+  { name: 'Inventory', icon: 'inventory', path: '/inventory' },
+  { name: 'Media Library', icon: 'image', path: '/media' },
+  { name: 'Orders', icon: 'receipt_long', path: '/orders' },
+  { name: 'Settings', icon: 'settings', path: '/settings' },
 ];
+
+const isActive = (path: string) => {
+  if (path === '/' && route.path === '/') return true;
+  if (path !== '/' && route.path.startsWith(path)) return true;
+  return false;
+};
 </script>
 
 <template>
@@ -33,11 +43,11 @@ const navItems: NavItem[] = [
 
     <nav class="nav-menu">
       <ul>
-        <li v-for="item in navItems" :key="item.name" :class="{ active: item.active }">
-          <a href="#" class="nav-link">
+        <li v-for="item in navItems" :key="item.name" :class="{ active: isActive(item.path) }">
+          <router-link :to="item.path" class="nav-link">
             <span class="material-icons-outlined">{{ item.icon }}</span>
             <span class="nav-text">{{ item.name }}</span>
-          </a>
+          </router-link>
         </li>
       </ul>
     </nav>
