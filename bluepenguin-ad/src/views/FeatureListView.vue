@@ -1,22 +1,29 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import MainLayout from '../components/layout/MainLayout.vue';
 import FeatureListItem from '../components/features/FeatureListItem.vue';
+import { FeatureService, type Feature } from '../services/FeatureService';
 
-interface Feature {
-  id: string;
-  name: string;
-  productCount: number;
-  isActive: boolean;
-}
+const features = ref<Feature[]>([]);
+const isLoading = ref(true);
+const error = ref<string | null>(null);
 
-const features = ref<Feature[]>([
-  { id: '1', name: 'Anti-Tarnish', productCount: 122, isActive: true },
-  { id: '2', name: 'Water-Resistant', productCount: 93, isActive: true },
-  { id: '3', name: 'Hypoallergenic', productCount: 57, isActive: true },
-  { id: '4', name: 'Recycled Silver', productCount: 81, isActive: true },
-  { id: '5', name: 'Handcrafted', productCount: 29, isActive: true },
-]);
+const fetchFeatures = async () => {
+  isLoading.value = true;
+  error.value = null;
+  try {
+    features.value = await FeatureService.getAll();
+  } catch (err) {
+    error.value = 'Failed to load features. Please try again later.';
+    console.error(err);
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+onMounted(() => {
+  fetchFeatures();
+});
 </script>
 
 <template>
@@ -55,20 +62,31 @@ const features = ref<Feature[]>([
         </div>
 
         <div class="list-summary flex justify-between align-center">
-           <span class="count-text">5 Features</span>
+           <span class="count-text">{{ features.length }} Features</span>
            <div class="pagination-simple flex align-center gap-2">
-              <span>1–5 of 5</span>
+              <span>1–{{ features.length }} of {{ features.length }}</span>
               <button class="nav-btn disabled"><span class="material-icons-outlined">chevron_left</span></button>
               <button class="nav-btn disabled"><span class="material-icons-outlined">chevron_right</span></button>
            </div>
         </div>
 
         <div class="feature-list">
-          <FeatureListItem 
-            v-for="feature in features" 
-            :key="feature.id" 
-            :feature="feature" 
-          />
+          <div v-if="isLoading" class="loading-state flex justify-center align-center p-8">
+            <span class="material-icons-outlined rotating">sync</span>
+            <span>Loading features...</span>
+          </div>
+          <div v-else-if="error" class="error-state flex justify-center align-center p-8 text-danger">
+            <span class="material-icons-outlined">error_outline</span>
+            <span>{{ error }}</span>
+            <button @click="fetchFeatures" class="btn btn-link">Retry</button>
+          </div>
+          <template v-else>
+            <FeatureListItem 
+              v-for="feature in features" 
+              :key="feature.id" 
+              :feature="feature" 
+            />
+          </template>
         </div>
 
         <div class="list-footer flex justify-between align-center">
@@ -151,6 +169,39 @@ const features = ref<Feature[]>([
 
 .btn-filter.active {
   background-color: #f8f9fa;
+}
+
+.loading-state, .error-state {
+  flex-direction: column;
+  gap: 12px;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.rotating {
+  animation: rotate 1.5s linear infinite;
+}
+
+@keyframes rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.p-8 {
+  padding: 32px;
+}
+
+.text-danger {
+  color: var(--danger-color);
+}
+
+.btn-link {
+  background: none;
+  border: none;
+  color: var(--primary-color);
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
 }
 
 .add-feature-btn {
