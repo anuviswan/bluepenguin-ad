@@ -43,8 +43,11 @@ export class FeatureService {
         }
     }
 
-    static async create(name: string): Promise<void> {
+    static async create(id: string, name: string): Promise<void> {
         // /api/Feature/create exists in bp.webapi.json
-        await api.post('/api/Feature/create', { featureName: name });
+        await api.post('/api/Feature/create', {
+            featureId: id,
+            featureName: name
+        });
     }
 }
