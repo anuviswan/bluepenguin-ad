@@ -22,6 +22,7 @@ defineProps<{
     </div>
 
     <div class="feature-details">
+      <span class="feature-id">[{{ feature.id }}]</span>
       <span class="feature-name">{{ feature.name }}</span>
       <span class="product-count">({{ feature.productCount }})</span>
     </div>
@@ -76,6 +77,15 @@ defineProps<{
 .feature-name {
   font-weight: 500;
   color: var(--text-main);
+}
+
+.feature-id {
+  font-family: monospace;
+  font-size: 12px;
+  color: var(--text-muted);
+  background-color: var(--bg-main);
+  padding: 2px 6px;
+  border-radius: 4px;
 }
 
 .product-count {

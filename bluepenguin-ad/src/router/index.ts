@@ -18,6 +18,11 @@ const router = createRouter({
       name: 'features',
       component: () => import('../views/FeatureListView.vue'),
     },
+    {
+      path: '/features/add',
+      name: 'add-feature',
+      component: () => import('../views/AddFeatureView.vue'),
+    },
   ],
 })
 

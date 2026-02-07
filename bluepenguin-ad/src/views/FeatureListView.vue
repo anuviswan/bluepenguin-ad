@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import MainLayout from '../components/layout/MainLayout.vue';
 import FeatureListItem from '../components/features/FeatureListItem.vue';
 import { FeatureService, type Feature } from '../services/FeatureService';
 
+const router = useRouter();
 const features = ref<Feature[]>([]);
 const isLoading = ref(true);
 const error = ref<string | null>(null);
@@ -54,7 +56,7 @@ onMounted(() => {
                 <span class="material-icons-outlined">expand_more</span>
               </button>
            </div>
-           <button class="btn btn-primary add-feature-btn">
+           <button class="btn btn-primary add-feature-btn" @click="router.push('/features/add')">
              <span class="material-icons-outlined">add</span>
              Add Feature
              <span class="material-icons-outlined">expand_more</span>
