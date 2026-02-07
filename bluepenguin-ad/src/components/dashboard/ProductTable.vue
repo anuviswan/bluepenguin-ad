@@ -1,28 +1,79 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, onMounted, computed } from 'vue';
+import { ProductService, type Product } from '../../services/ProductService';
+import { CategoryService } from '../../services/CategoryService';
+import { CollectionService } from '../../services/CollectionService';
+import { MaterialService } from '../../services/MaterialService';
 
-interface Product {
-  sku: string;
-  name: string;
-  category: string;
-  collection: string;
-  price: string;
-  status: string;
-}
+const products = ref<Product[]>([]);
+const categories = ref<{id: string, name: string}[]>([]);
+const collections = ref<{id: string, name: string}[]>([]);
+const materials = ref<{id: string, name: string}[]>([]);
+const statuses = ref<string[]>(['Status', 'Live', 'Out of Stock', 'Archived']);
 
-const products: Product[] = [
-  { sku: 'BP-001', name: 'Blue Pearl Necklace', category: 'Necklace', collection: '-', price: '$45', status: 'Live' },
-  { sku: 'BP-002', name: 'Ocean Dream Pendant', category: 'Ocean Dreams', collection: 'Ocean Dreams', price: '$35', status: 'Live' },
-  { sku: 'BP-005', name: 'Starfish Anklet', category: 'Anklet', collection: '-', price: '$25', status: 'Live' },
-  { sku: 'BP-007', name: 'Lapis Drop Earrings', category: 'Earrings', collection: 'Ocean Dreams', price: '$48', status: 'Live' },
-  { sku: 'BP-006', name: 'Lapis Drop Necklace', category: 'Necklace', collection: '-', price: '$48', status: 'Live' },
-  { sku: 'BP-009', name: 'Adjustable Resin Bangle', category: '-', collection: '-', price: '$...', status: 'Out of Stock' },
-];
+const isLoading = ref(true);
+const error = ref<string | null>(null);
 
-const categories: string[] = ['Category', 'Necklace', 'Ocean Dreams', 'Anklet', 'Earrings'];
-const collections: string[] = ['Collection', 'Ocean Dreams'];
-const materials: string[] = ['Material', 'Silver', 'Gold', 'Bead'];
-const statuses: string[] = ['Status', 'Live', 'Out of Stock', 'Archived'];
+// Filters
+const searchQuery = ref('');
+const selectedCategory = ref('');
+const selectedCollection = ref('');
+const selectedMaterial = ref('');
+const selectedStatus = ref('Status');
+
+const filteredProducts = computed(() => {
+  return products.value.filter(product => {
+    // Search filter (Name or SKU)
+    const matchesSearch = !searchQuery.value || 
+      product.name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+      product.sku.toLowerCase().includes(searchQuery.value.toLowerCase());
+
+    // Category filter
+    const matchesCategory = !selectedCategory.value || 
+      product.category === selectedCategory.value;
+
+    // Collection filter
+    const matchesCollection = !selectedCollection.value || 
+      product.collectionCode === selectedCollection.value;
+
+    // Material filter
+    const matchesMaterial = !selectedMaterial.value || 
+      product.material === selectedMaterial.value;
+
+    // Status filter
+    const matchesStatus = selectedStatus.value === 'Status' || 
+      product.status === selectedStatus.value;
+
+    return matchesSearch && matchesCategory && matchesCollection && matchesMaterial && matchesStatus;
+  });
+});
+
+const fetchData = async () => {
+  isLoading.value = true;
+  error.value = null;
+  try {
+    const [productsData, categoriesData, collectionsData, materialsData] = await Promise.all([
+      ProductService.getAll(),
+      CategoryService.getAll(),
+      CollectionService.getAll(),
+      MaterialService.getAll()
+    ]);
+
+    products.value = productsData;
+    categories.value = categoriesData.map(c => ({ id: c.id, name: c.name }));
+    collections.value = collectionsData.map(c => ({ id: c.id, name: c.name }));
+    materials.value = materialsData.map(m => ({ id: m.id, name: m.name }));
+  } catch (err) {
+    console.error('Failed to fetch dashboard data:', err);
+    error.value = 'Failed to load dashboard data. Please try again later.';
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+onMounted(() => {
+  fetchData();
+});
 </script>
 
 <template>
@@ -39,18 +90,52 @@ const statuses: string[] = ['Status', 'Live', 'Out of Stock', 'Archived'];
       <div class="filter-group">
         <div class="search-box">
           <span class="material-icons-outlined">search</span>
-          <input type="text" placeholder="Search..." />
+          <input type="text" placeholder="Search..." v-model="searchQuery" />
         </div>
-        <div class="select-wrapper" v-for="filter in [categories, collections, materials, statuses]" :key="filter[0]">
-          <select>
-            <option v-for="opt in filter" :key="opt">{{ opt }}</option>
+        
+        <div class="select-wrapper">
+          <select v-model="selectedCategory">
+            <option value="">Category</option>
+            <option v-for="opt in categories" :key="opt.id" :value="opt.id">{{ opt.name }}</option>
+          </select>
+          <span class="material-icons-outlined">expand_more</span>
+        </div>
+
+        <div class="select-wrapper">
+          <select v-model="selectedCollection">
+            <option value="">Collection</option>
+            <option v-for="opt in collections" :key="opt.id" :value="opt.id">{{ opt.name }}</option>
+          </select>
+          <span class="material-icons-outlined">expand_more</span>
+        </div>
+
+        <div class="select-wrapper">
+          <select v-model="selectedMaterial">
+            <option value="">Material</option>
+            <option v-for="opt in materials" :key="opt.id" :value="opt.id">{{ opt.name }}</option>
+          </select>
+          <span class="material-icons-outlined">expand_more</span>
+        </div>
+
+        <div class="select-wrapper">
+          <select v-model="selectedStatus">
+            <option v-for="opt in statuses" :key="opt" :value="opt">{{ opt }}</option>
           </select>
           <span class="material-icons-outlined">expand_more</span>
         </div>
       </div>
     </div>
 
-    <div class="table-container">
+    <div v-if="error" class="error-message p-4 text-danger mb-4">
+      {{ error }}
+    </div>
+
+    <div v-if="isLoading" class="loading-state p-8 flex-center">
+      <div class="spinner"></div>
+      <p class="ml-4">Loading products...</p>
+    </div>
+
+    <div v-else class="table-container">
       <table>
         <thead>
           <tr>
@@ -64,12 +149,12 @@ const statuses: string[] = ['Status', 'Live', 'Out of Stock', 'Archived'];
           </tr>
         </thead>
         <tbody>
-          <tr v-for="product in products" :key="product.sku">
+          <tr v-for="product in filteredProducts" :key="product.sku">
             <td>{{ product.sku }}</td>
             <td class="product-name">{{ product.name }}</td>
             <td>{{ product.category }}</td>
-            <td>{{ product.collection }}</td>
-            <td>{{ product.price }}</td>
+            <td>{{ product.collectionCode }}</td>
+            <td>₹{{ product.price }}</td>
             <td>
               <span :class="['badge', product.status === 'Live' ? 'badge-success' : 'badge-warning']">
                 <span class="dot"></span>
@@ -80,12 +165,15 @@ const statuses: string[] = ['Status', 'Live', 'Out of Stock', 'Archived'];
               <span class="material-icons-outlined">more_horiz</span>
             </td>
           </tr>
+          <tr v-if="filteredProducts.length === 0">
+            <td colspan="7" class="text-center p-8 text-muted">No products found for the selected filters.</td>
+          </tr>
         </tbody>
       </table>
     </div>
 
     <div class="pagination">
-      <span class="results-count">342 Products</span>
+      <span class="results-count">{{ filteredProducts.length }} Products</span>
       <div class="pages">
         <button class="page-btn"><span class="material-icons-outlined">chevron_left</span></button>
         <button class="page-btn active">1</button>
@@ -257,5 +345,29 @@ td {
   border-color: var(--primary-color);
   color: var(--primary-color);
   font-weight: 600;
+}
+
+.spinner {
+  width: 24px;
+  height: 24px;
+  border: 3px solid var(--border-color);
+  border-top-color: var(--primary-color);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.ml-4 { margin-left: 16px; }
+.text-center { text-align: center; }
+
+.error-message {
+  border: 1px solid #ffccd1;
+  background-color: #fff5f5;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  color: var(--danger-color);
 }
 </style>
