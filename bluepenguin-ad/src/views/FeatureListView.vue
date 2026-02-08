@@ -83,6 +83,15 @@ onMounted(() => {
             <button @click="fetchFeatures" class="btn btn-link">Retry</button>
           </div>
           <template v-else>
+            <div class="list-header flex align-center gap-4">
+              <div class="col-drag"></div>
+              <div class="col-icon"></div>
+              <div class="col-id">Feature ID</div>
+              <div class="col-name">Feature Name</div>
+              <div class="col-symbolic">Symbolic Text</div>
+              <div class="col-count">Count</div>
+              <div class="col-actions">Actions</div>
+            </div>
             <FeatureListItem 
               v-for="feature in features" 
               :key="feature.id" 
@@ -242,6 +251,25 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
 }
+
+.list-header {
+  padding: 12px 16px;
+  background-color: #f8f9fa;
+  border-bottom: 1px solid var(--border-color);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.col-drag { width: 24px; }
+.col-icon { width: 32px; }
+.col-id { width: 100px; }
+.col-name { flex: 2; }
+.col-symbolic { flex: 2; }
+.col-count { width: 80px; text-align: center; }
+.col-actions { width: 120px; text-align: right; }
 
 .list-footer {
   padding: 12px 24px;

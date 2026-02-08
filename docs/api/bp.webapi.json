@@ -507,6 +507,10 @@
           "featureName": {
             "type": "string",
             "nullable": true
+          },
+          "symbolic": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -618,6 +622,10 @@
             "nullable": true
           },
           "title": {
+            "type": "string",
+            "nullable": true
+          },
+          "notes": {
             "type": "string",
             "nullable": true
           },
