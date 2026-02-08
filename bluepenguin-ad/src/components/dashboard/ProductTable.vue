@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue';
+import { useRouter } from 'vue-router';
 import { ProductService, type Product } from '../../services/ProductService';
 import { CategoryService } from '../../services/CategoryService';
 import { CollectionService } from '../../services/CollectionService';
@@ -10,6 +11,8 @@ const categories = ref<{id: string, name: string}[]>([]);
 const collections = ref<{id: string, name: string}[]>([]);
 const materials = ref<{id: string, name: string}[]>([]);
 const statuses = ref<string[]>(['Status', 'Live', 'Out of Stock', 'Archived']);
+
+const router = useRouter();
 
 const isLoading = ref(true);
 const error = ref<string | null>(null);
@@ -80,7 +83,7 @@ onMounted(() => {
   <div class="product-section card">
     <div class="section-header">
       <h2>Products</h2>
-      <button class="btn btn-primary">
+      <button class="btn btn-primary" @click="router.push('/products/create')">
         <span class="material-icons-outlined">add</span>
         Add Product
       </button>
