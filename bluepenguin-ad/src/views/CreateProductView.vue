@@ -14,7 +14,8 @@ const router = useRouter();
 const activeTab = ref('basic');
 const tabs = [
   { id: 'basic', label: 'Basic Info' },
-  { id: 'materials', label: 'Materials' },
+  { id: 'care', label: 'Product Care' },
+  { id: 'specs', label: 'Specifications' },
   { id: 'features', label: 'Features' },
   { id: 'images', label: 'Images' },
   { id: 'pricing', label: 'Pricing & Availability' }
@@ -25,8 +26,8 @@ const product = ref({
   sku: '',
   name: '',
   description: '',
-  productCare: '',
-  specifications: '',
+  productCare: [] as string[],
+  specifications: [] as string[],
   category: '',
   collectionCode: '',
   material: '',
@@ -47,6 +48,32 @@ const isLoading = ref(false);
 const isSubmitting = ref(false);
 const error = ref<string | null>(null);
 const successMessage = ref<string | null>(null);
+
+// List item helpers
+const newItemCare = ref('');
+const newItemSpec = ref('');
+
+const addCareItem = () => {
+  if (newItemCare.value.trim()) {
+    product.value.productCare.push(newItemCare.value.trim());
+    newItemCare.value = '';
+  }
+};
+
+const removeCareItem = (index: number) => {
+  product.value.productCare.splice(index, 1);
+};
+
+const addSpecItem = () => {
+  if (newItemSpec.value.trim()) {
+    product.value.specifications.push(newItemSpec.value.trim());
+    newItemSpec.value = '';
+  }
+};
+
+const removeSpecItem = (index: number) => {
+  product.value.specifications.splice(index, 1);
+};
 
 const fetchData = async () => {
   isLoading.value = true;
@@ -109,6 +136,54 @@ const toggleFeature = (code: string) => {
     product.value.featureCodes.splice(index, 1);
   }
 };
+
+const nextTab = () => {
+  const currentIndex = tabs.findIndex(t => t.id === activeTab.value);
+  if (currentIndex !== -1 && currentIndex < tabs.length - 1) {
+    const next = tabs[currentIndex + 1];
+    if (next) activeTab.value = next.id;
+  }
+};
+
+const prevTab = () => {
+  const currentIndex = tabs.findIndex(t => t.id === activeTab.value);
+  if (currentIndex !== -1 && currentIndex > 0) {
+    const prev = tabs[currentIndex - 1];
+    if (prev) activeTab.value = prev.id;
+  }
+};
+
+// Image Upload Logic
+const fileInput = ref<HTMLInputElement | null>(null);
+const imagePreviews = ref<string[]>([]);
+const selectedFiles = ref<File[]>([]);
+
+const triggerBrowse = () => {
+  fileInput.value?.click();
+};
+
+const handleFileChange = (event: Event) => {
+  const target = event.target as HTMLInputElement;
+  if (!target.files) return;
+
+  const files = Array.from(target.files);
+  files.forEach(file => {
+    selectedFiles.value.push(file);
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      imagePreviews.value.push(e.target?.result as string);
+    };
+    reader.readAsDataURL(file);
+  });
+  
+  // Reset input value to allow selecting same file again
+  target.value = '';
+};
+
+const removeImage = (index: number) => {
+  imagePreviews.value.splice(index, 1);
+  selectedFiles.value.splice(index, 1);
+};
 </script>
 
 <template>
@@ -128,12 +203,13 @@ const toggleFeature = (code: string) => {
       <!-- Tabs Navigation -->
       <div class="tabs-nav flex gap-8 mt-6">
         <button 
-          v-for="tab in tabs" 
+          v-for="(tab, index) in tabs" 
           :key="tab.id"
           class="tab-btn"
           :class="{ active: activeTab === tab.id }"
           @click="activeTab = tab.id"
         >
+          <span class="step-num">{{ index + 1 }}</span>
           {{ tab.label }}
         </button>
       </div>
@@ -155,16 +231,6 @@ const toggleFeature = (code: string) => {
             <div class="form-section full-width">
               <label for="description">Description</label>
               <textarea id="description" v-model="product.description" rows="4" placeholder="Enter unique and richer specific description..." class="form-input"></textarea>
-            </div>
-
-            <div class="form-section full-width">
-              <label for="productCare">Product Care Instructions</label>
-              <textarea id="productCare" v-model="product.productCare" rows="3" placeholder="How to care for this product..." class="form-input"></textarea>
-            </div>
-
-            <div class="form-section full-width">
-              <label for="specifications">Specifications</label>
-              <textarea id="specifications" v-model="product.specifications" rows="3" placeholder="Technical specifications..." class="form-input"></textarea>
             </div>
 
             <div class="form-section">
@@ -190,6 +256,17 @@ const toggleFeature = (code: string) => {
             </div>
 
             <div class="form-section">
+              <label for="material">Material</label>
+              <div class="select-wrapper">
+                <select id="material" v-model="product.material" class="form-input">
+                  <option value="">Select Material</option>
+                  <option v-for="m in materials" :key="m.id" :value="m.id">{{ m.name }}</option>
+                </select>
+                <span class="material-icons-outlined">expand_more</span>
+              </div>
+            </div>
+
+            <div class="form-section">
               <label>Status</label>
               <div class="status-options flex gap-6 mt-2">
                 <label class="radio-label">
@@ -207,15 +284,42 @@ const toggleFeature = (code: string) => {
           </div>
         </div>
 
-        <!-- Materials Tab -->
-        <div v-if="activeTab === 'materials'" class="tab-pane">
+        <!-- Product Care Tab -->
+        <div v-if="activeTab === 'care'" class="tab-pane">
           <div class="form-section">
-            <label>Select Material</label>
-            <div class="material-grid mt-4">
-              <label v-for="m in materials" :key="m.id" class="choice-label card" :class="{ selected: product.material === m.id }">
-                <input type="radio" :value="m.id" v-model="product.material" />
-                {{ m.name }}
-              </label>
+            <label>Care Instructions</label>
+            <div class="list-input-group flex gap-2">
+              <input v-model="newItemCare" type="text" placeholder="Add care instruction..." class="form-input" @keyup.enter="addCareItem" />
+              <button class="btn btn-primary" @click="addCareItem">Add</button>
+            </div>
+            <div class="items-list mt-4">
+              <div v-for="(item, index) in product.productCare" :key="index" class="list-item flex justify-between align-center p-3 mb-2 card">
+                <span>{{ item }}</span>
+                <button class="btn-icon text-danger" @click="removeCareItem(index)">
+                  <span class="material-icons-outlined">delete</span>
+                </button>
+              </div>
+              <p v-if="product.productCare.length === 0" class="text-muted text-center p-4">No care instructions added yet.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Specifications Tab -->
+        <div v-if="activeTab === 'specs'" class="tab-pane">
+          <div class="form-section">
+            <label>Specifications</label>
+            <div class="list-input-group flex gap-2">
+              <input v-model="newItemSpec" type="text" placeholder="Add specification..." class="form-input" @keyup.enter="addSpecItem" />
+              <button class="btn btn-primary" @click="addSpecItem">Add</button>
+            </div>
+            <div class="items-list mt-4">
+              <div v-for="(item, index) in product.specifications" :key="index" class="list-item flex justify-between align-center p-3 mb-2 card">
+                <span>{{ item }}</span>
+                <button class="btn-icon text-danger" @click="removeSpecItem(index)">
+                  <span class="material-icons-outlined">delete</span>
+                </button>
+              </div>
+              <p v-if="product.specifications.length === 0" class="text-muted text-center p-4">No specifications added yet.</p>
             </div>
           </div>
         </div>
@@ -240,11 +344,28 @@ const toggleFeature = (code: string) => {
 
         <!-- Images Tab -->
         <div v-if="activeTab === 'images'" class="tab-pane">
-          <div class="upload-area">
+          <input 
+            type="file" 
+            ref="fileInput" 
+            multiple 
+            accept="image/*" 
+            class="hidden-input" 
+            @change="handleFileChange"
+          />
+          
+          <div class="upload-area" @click="triggerBrowse">
             <span class="material-icons-outlined upload-icon">cloud_upload</span>
-            <p>Drag & drop images here, or <span class="browse-link" @click="() => {}">Browse</span></p>
-            <button class="btn btn-primary mt-4" type="button" @click="() => {}">Upload Images</button>
+            <p>Drag & drop images here, or <span class="browse-link">Browse</span></p>
             <p class="upload-hint">Recommended size: 800x800px</p>
+          </div>
+
+          <div v-if="imagePreviews.length > 0" class="previews-grid mt-6">
+            <div v-for="(src, index) in imagePreviews" :key="index" class="preview-item card">
+              <img :src="src" alt="Preview" />
+              <button class="remove-btn" @click.stop="removeImage(index)">
+                <span class="material-icons-outlined">close</span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -281,12 +402,28 @@ const toggleFeature = (code: string) => {
         </div>
 
         <!-- Form Actions -->
-        <div class="form-actions flex justify-end gap-4 mt-8">
-          <button class="btn btn-outline" @click="handleCancel" :disabled="isSubmitting">Cancel</button>
-          <button class="btn btn-outline" @click="() => { product.status = 'Draft'; handlePublish(); }" :disabled="isSubmitting">Save as Draft</button>
-          <button class="btn btn-primary" @click="handlePublish" :disabled="isSubmitting">
-            {{ isSubmitting ? 'Publishing...' : 'Publish Product' }}
-          </button>
+        <div class="form-actions flex justify-between gap-4 mt-8">
+          <div class="flex gap-4">
+            <button class="btn btn-outline" @click="handleCancel" :disabled="isSubmitting">Cancel</button>
+            <button v-if="activeTab !== 'basic'" class="btn btn-outline" @click="prevTab" :disabled="isSubmitting">
+              Back
+            </button>
+          </div>
+          
+          <div class="flex gap-4">
+            <button v-if="activeTab !== 'pricing'" class="btn btn-primary" @click="nextTab" :disabled="isSubmitting">
+              Next
+            </button>
+            
+            <template v-else>
+              <button class="btn btn-outline" @click="() => { product.status = 'Draft'; handlePublish(); }" :disabled="isSubmitting">
+                Save as Draft
+              </button>
+              <button class="btn btn-primary" @click="handlePublish" :disabled="isSubmitting">
+                {{ isSubmitting ? 'Publishing...' : 'Publish Product' }}
+              </button>
+            </template>
+          </div>
         </div>
       </div>
     </div>
@@ -337,6 +474,26 @@ const toggleFeature = (code: string) => {
   color: var(--text-muted);
   cursor: pointer;
   position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.step-num {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background-color: #eee;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+}
+
+.tab-btn.active .step-num {
+  background-color: var(--primary-color);
+  color: white;
 }
 
 .tab-btn.active {
@@ -472,6 +629,50 @@ textarea.form-input {
   margin-top: 8px;
 }
 
+.hidden-input {
+  display: none;
+}
+
+.previews-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 16px;
+}
+
+.preview-item {
+  position: relative;
+  aspect-ratio: 1;
+  padding: 4px;
+}
+
+.preview-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+}
+
+.remove-btn {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 24px;
+  height: 24px;
+  background-color: var(--danger-color);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.remove-btn .material-icons-outlined {
+  font-size: 16px;
+}
+
 .status-options {
   display: flex;
   align-items: center;
@@ -511,6 +712,32 @@ textarea.form-input {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
+}
+
+.list-item {
+  background-color: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+}
+
+.btn-icon {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background-color 0.2s;
+}
+
+.btn-icon:hover {
+  background-color: #fff5f5;
+}
+
+.btn-icon.text-danger {
+  color: var(--danger-color);
 }
 
 .mt-2 { margin-top: 8px; }
