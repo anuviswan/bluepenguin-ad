@@ -7,6 +7,7 @@ import { FeatureService } from '../services/FeatureService';
 const router = useRouter();
 const featureId = ref('');
 const featureName = ref('');
+const symbolicText = ref('');
 const status = ref('active');
 const isSubmitting = ref(false);
 const error = ref<string | null>(null);
@@ -30,7 +31,7 @@ const handleCreate = async () => {
   error.value = null;
   
   try {
-    await FeatureService.create(featureId.value.trim(), featureName.value.trim());
+    await FeatureService.create(featureId.value.trim(), featureName.value.trim(), symbolicText.value.trim());
     successMessage.value = `Feature '${featureName.value.trim()}' has been created successfully! Redirecting...`;
     
     setTimeout(() => {
@@ -78,6 +79,18 @@ const handleCreate = async () => {
             v-model="featureName" 
             type="text" 
             placeholder="Enter feature name (e.g., Anti-Tarnish)..." 
+            class="form-input"
+            :disabled="isSubmitting"
+          />
+        </div>
+
+        <div class="form-section">
+          <label for="symbolicText">Symbolic Text</label>
+          <input 
+            id="symbolicText" 
+            v-model="symbolicText" 
+            type="text" 
+            placeholder="Enter symbolic representation..." 
             class="form-input"
             :disabled="isSubmitting"
           />

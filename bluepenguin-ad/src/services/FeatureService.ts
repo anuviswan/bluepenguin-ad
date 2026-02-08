@@ -3,6 +3,7 @@ import { api } from '../api/api';
 export interface Feature {
     id: string;
     name: string;
+    symbolicText?: string;
     productCount: number;
     isActive: boolean;
 }
@@ -34,6 +35,7 @@ export class FeatureService {
             return response.map((item: any) => ({
                 id: item.featureId || item.rowKey || item.id || Math.random().toString(),
                 name: item.featureName || item.title || item.name || 'Unknown Feature',
+                symbolicText: item.symbolic || item.symbolicText,
                 productCount: item.productCount || 0,
                 isActive: item.isActive ?? true,
             }));
@@ -43,11 +45,12 @@ export class FeatureService {
         }
     }
 
-    static async create(id: string, name: string): Promise<void> {
+    static async create(id: string, name: string, symbolicText?: string): Promise<void> {
         // /api/Feature/create exists in bp.webapi.json
         await api.post('/api/Feature/create', {
             featureId: id,
-            featureName: name
+            featureName: name,
+            symbolic: symbolicText
         });
     }
 }

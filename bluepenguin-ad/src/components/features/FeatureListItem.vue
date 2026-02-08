@@ -2,6 +2,7 @@
 interface Feature {
   id: string;
   name: string;
+  symbolicText?: string;
   productCount: number;
   isActive: boolean;
 }
@@ -12,22 +13,36 @@ defineProps<{
 </script>
 
 <template>
-  <div class="feature-item">
-    <div class="drag-handle">
+  <div class="feature-item flex align-center gap-4">
+    <div class="col-drag drag-handle">
       <span class="material-icons-outlined">drag_indicator</span>
     </div>
     
-    <div class="feature-icon">
+    <div class="col-icon feature-icon">
       <span class="material-icons-outlined">auto_awesome</span>
     </div>
 
-    <div class="feature-details">
-      <span class="feature-id">[{{ feature.id }}]</span>
-      <span class="feature-name">{{ feature.name }}</span>
-      <span class="product-count">({{ feature.productCount }})</span>
+    <div class="col-id feature-id">
+      <span>[{{ feature.id }}]</span>
     </div>
 
-    <div class="item-actions">
+    <div class="col-name feature-name">
+      {{ feature.name }}
+    </div>
+
+    <div class="col-symbolic">
+      <span v-if="feature.symbolicText" class="feature-symbolic" :title="'Symbolic: ' + feature.symbolicText">
+         <span class="material-icons-outlined">token</span>
+         {{ feature.symbolicText }}
+      </span>
+      <span v-else class="text-muted">-</span>
+    </div>
+
+    <div class="col-count product-count">
+      {{ feature.productCount }}
+    </div>
+
+    <div class="col-actions item-actions">
       <button class="btn-icon edit" title="Edit">
         <span class="material-icons-outlined">edit</span>
       </button>
@@ -46,13 +61,21 @@ defineProps<{
   padding: 12px 16px;
   background-color: white;
   border-bottom: 1px solid var(--border-color);
-  gap: 16px;
   transition: background-color 0.2s;
 }
 
 .feature-item:hover {
   background-color: #fcfcfc;
 }
+
+/* Column Widths (matching FeatureListView header) */
+.col-drag { width: 24px; }
+.col-icon { width: 32px; }
+.col-id { width: 100px; }
+.col-name { flex: 2; font-weight: 500; color: var(--text-main); }
+.col-symbolic { flex: 2; }
+.col-count { width: 80px; text-align: center; }
+.col-actions { width: 120px; text-align: right; }
 
 .drag-handle {
   color: #ccc;
@@ -67,19 +90,7 @@ defineProps<{
   align-items: center;
 }
 
-.feature-details {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.feature-name {
-  font-weight: 500;
-  color: var(--text-main);
-}
-
-.feature-id {
+.feature-id span {
   font-family: monospace;
   font-size: 12px;
   color: var(--text-muted);
@@ -93,9 +104,31 @@ defineProps<{
   font-size: 13px;
 }
 
+.feature-symbolic {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--primary-color);
+  background-color: #f0f7ff;
+  padding: 2px 8px;
+  border-radius: 12px;
+  border: 1px solid #e0efff;
+}
+
+.feature-symbolic .material-icons-outlined {
+  font-size: 14px;
+}
+
+.text-muted {
+  color: #ccc;
+  font-size: 12px;
+}
+
 .item-actions {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 12px;
 }
 
