@@ -1,15 +1,19 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue';
+import { useRouter } from 'vue-router';
 import { ProductService, type Product } from '../../services/ProductService';
 import { CategoryService } from '../../services/CategoryService';
 import { CollectionService } from '../../services/CollectionService';
 import { MaterialService } from '../../services/MaterialService';
 
 const products = ref<Product[]>([]);
+const totalCount = ref(0);
 const categories = ref<{id: string, name: string}[]>([]);
 const collections = ref<{id: string, name: string}[]>([]);
 const materials = ref<{id: string, name: string}[]>([]);
-const statuses = ref<string[]>(['Status', 'Live', 'Out of Stock', 'Archived']);
+const statuses = ref<string[]>(['Status', 'Active', 'Out of Stock', 'Draft', 'Archived']);
+
+const router = useRouter();
 
 const isLoading = ref(true);
 const error = ref<string | null>(null);
@@ -21,7 +25,14 @@ const selectedCollection = ref('');
 const selectedMaterial = ref('');
 const selectedStatus = ref('Status');
 
+// Pagination
+const currentPage = ref(1);
+const pageSize = ref(10);
+
 const filteredProducts = computed(() => {
+  // We still filter locally for now if search/filters are applied, 
+  // but we fetch based on pagination. 
+  // Note: True server-side filtering would require updated API parameters for search too.
   return products.value.filter(product => {
     // Search filter (Name or SKU)
     const matchesSearch = !searchQuery.value || 
@@ -48,18 +59,45 @@ const filteredProducts = computed(() => {
   });
 });
 
+const totalPages = computed(() => Math.ceil(totalCount.value / pageSize.value));
+
+const setPage = (page: number) => {
+  if (page >= 1 && page <= totalPages.value) {
+    currentPage.value = page;
+    fetchProducts();
+  }
+};
+
+const nextPage = () => setPage(currentPage.value + 1);
+const prevPage = () => setPage(currentPage.value - 1);
+
+const fetchProducts = async () => {
+  isLoading.value = true;
+  try {
+    const { products: data, totalCount: count } = await ProductService.getAll(currentPage.value, pageSize.value);
+    products.value = data;
+    totalCount.value = count;
+  } catch (err) {
+    console.error('Failed to fetch products:', err);
+    error.value = 'Failed to load products.';
+  } finally {
+    isLoading.value = false;
+  }
+};
+
 const fetchData = async () => {
   isLoading.value = true;
   error.value = null;
   try {
-    const [productsData, categoriesData, collectionsData, materialsData] = await Promise.all([
-      ProductService.getAll(),
+    const [productsResult, categoriesData, collectionsData, materialsData] = await Promise.all([
+      ProductService.getAll(currentPage.value, pageSize.value),
       CategoryService.getAll(),
       CollectionService.getAll(),
       MaterialService.getAll()
     ]);
 
-    products.value = productsData;
+    products.value = productsResult.products;
+    totalCount.value = productsResult.totalCount;
     categories.value = categoriesData.map(c => ({ id: c.id, name: c.name }));
     collections.value = collectionsData.map(c => ({ id: c.id, name: c.name }));
     materials.value = materialsData.map(m => ({ id: m.id, name: m.name }));
@@ -80,7 +118,7 @@ onMounted(() => {
   <div class="product-section card">
     <div class="section-header">
       <h2>Products</h2>
-      <button class="btn btn-primary">
+      <button class="btn btn-primary" @click="router.push('/products/create')">
         <span class="material-icons-outlined">add</span>
         Add Product
       </button>
@@ -90,11 +128,11 @@ onMounted(() => {
       <div class="filter-group">
         <div class="search-box">
           <span class="material-icons-outlined">search</span>
-          <input type="text" placeholder="Search..." v-model="searchQuery" />
+          <input type="text" placeholder="Search..." v-model="searchQuery" @input="currentPage = 1" />
         </div>
         
         <div class="select-wrapper">
-          <select v-model="selectedCategory">
+          <select v-model="selectedCategory" @change="currentPage = 1">
             <option value="">Category</option>
             <option v-for="opt in categories" :key="opt.id" :value="opt.id">{{ opt.name }}</option>
           </select>
@@ -102,7 +140,7 @@ onMounted(() => {
         </div>
 
         <div class="select-wrapper">
-          <select v-model="selectedCollection">
+          <select v-model="selectedCollection" @change="currentPage = 1">
             <option value="">Collection</option>
             <option v-for="opt in collections" :key="opt.id" :value="opt.id">{{ opt.name }}</option>
           </select>
@@ -110,7 +148,7 @@ onMounted(() => {
         </div>
 
         <div class="select-wrapper">
-          <select v-model="selectedMaterial">
+          <select v-model="selectedMaterial" @change="currentPage = 1">
             <option value="">Material</option>
             <option v-for="opt in materials" :key="opt.id" :value="opt.id">{{ opt.name }}</option>
           </select>
@@ -118,7 +156,7 @@ onMounted(() => {
         </div>
 
         <div class="select-wrapper">
-          <select v-model="selectedStatus">
+          <select v-model="selectedStatus" @change="currentPage = 1">
             <option v-for="opt in statuses" :key="opt" :value="opt">{{ opt }}</option>
           </select>
           <span class="material-icons-outlined">expand_more</span>
@@ -156,7 +194,7 @@ onMounted(() => {
             <td>{{ product.collectionCode }}</td>
             <td>₹{{ product.price }}</td>
             <td>
-              <span :class="['badge', product.status === 'Live' ? 'badge-success' : 'badge-warning']">
+              <span :class="['badge', product.status === 'Active' ? 'badge-success' : 'badge-warning']">
                 <span class="dot"></span>
                 {{ product.status }}
               </span>
@@ -173,14 +211,25 @@ onMounted(() => {
     </div>
 
     <div class="pagination">
-      <span class="results-count">{{ filteredProducts.length }} Products</span>
-      <div class="pages">
-        <button class="page-btn"><span class="material-icons-outlined">chevron_left</span></button>
-        <button class="page-btn active">1</button>
-        <button class="page-btn">2</button>
-        <button class="page-btn">3</button>
-        <button class="page-btn">4</button>
-        <button class="page-btn"><span class="material-icons-outlined">chevron_right</span></button>
+      <span class="results-count">
+        Showing {{ (currentPage - 1) * pageSize + 1 }}-{{ Math.min(currentPage * pageSize, totalCount) }} of {{ totalCount }} Products
+      </span>
+      <div class="pages" v-if="totalPages > 1">
+        <button class="page-btn" @click="prevPage" :disabled="currentPage === 1">
+          <span class="material-icons-outlined">chevron_left</span>
+        </button>
+        <button 
+          v-for="page in totalPages" 
+          :key="page" 
+          class="page-btn" 
+          :class="{ active: currentPage === page }"
+          @click="setPage(page)"
+        >
+          {{ page }}
+        </button>
+        <button class="page-btn" @click="nextPage" :disabled="currentPage === totalPages">
+          <span class="material-icons-outlined">chevron_right</span>
+        </button>
       </div>
     </div>
   </div>
@@ -340,11 +389,10 @@ td {
   color: var(--text-muted);
 }
 
-.page-btn.active {
-  background-color: var(--primary-light);
-  border-color: var(--primary-color);
-  color: var(--primary-color);
-  font-weight: 600;
+.page-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
 }
 
 .spinner {

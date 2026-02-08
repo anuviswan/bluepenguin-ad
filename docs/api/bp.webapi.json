@@ -392,6 +392,26 @@
         "tags": [
           "Product"
         ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 5
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK"
@@ -403,6 +423,26 @@
       "post": {
         "tags": [
           "Product"
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 1
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 50
+            }
+          }
         ],
         "requestBody": {
           "content": {
@@ -506,15 +546,33 @@
       "CreateProductRequest": {
         "type": "object",
         "properties": {
-          "name": {
+          "productName": {
             "type": "string",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "specifications": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "productCareInstructions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
             "nullable": true
           },
           "price": {
             "type": "number",
             "format": "double"
           },
-          "category": {
+          "categoryCode": {
             "type": "string",
             "nullable": true
           },
