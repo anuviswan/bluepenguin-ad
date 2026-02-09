@@ -24,6 +24,16 @@ const router = createRouter({
       component: () => import('../views/AddFeatureView.vue'),
     },
     {
+      path: '/collections',
+      name: 'collections',
+      component: () => import('../views/CollectionListView.vue'),
+    },
+    {
+      path: '/collections/add',
+      name: 'add-collection',
+      component: () => import('../views/AddCollectionView.vue'),
+    },
+    {
       path: '/products/create',
       name: 'create-product',
       component: () => import('../views/CreateProductView.vue'),
