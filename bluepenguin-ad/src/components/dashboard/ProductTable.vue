@@ -187,7 +187,7 @@ onMounted(() => {
           </tr>
         </thead>
         <tbody>
-          <tr v-for="product in filteredProducts" :key="product.sku">
+                <tr v-for="product in filteredProducts" :key="product.sku" @click="router.push(`/products/${product.sku}`)" class="clickable-row">
             <td>{{ product.sku }}</td>
             <td class="product-name">{{ product.name }}</td>
             <td>{{ product.category }}</td>
@@ -337,6 +337,15 @@ td {
 
 .product-name {
   font-weight: 500;
+}
+
+.clickable-row {
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.clickable-row:hover {
+  background-color: #f8f9fa;
 }
 
 .badge {

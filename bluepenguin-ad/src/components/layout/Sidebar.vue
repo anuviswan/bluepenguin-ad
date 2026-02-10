@@ -16,10 +16,10 @@ const navItems: NavItem[] = [
   { name: 'Collections', icon: 'collections', path: '/collections' },
   { name: 'Materials', icon: 'texture', path: '/materials' },
   { name: 'Features', icon: 'auto_awesome', path: '/features' },
-  { name: 'Inventory', icon: 'inventory', path: '/inventory' },
-  { name: 'Media Library', icon: 'image', path: '/media' },
-  { name: 'Orders', icon: 'receipt_long', path: '/orders' },
-  { name: 'Settings', icon: 'settings', path: '/settings' },
+  // { name: 'Inventory', icon: 'inventory', path: '/inventory' },
+  // { name: 'Media Library', icon: 'image', path: '/media' },
+  // { name: 'Orders', icon: 'receipt_long', path: '/orders' },
+  // { name: 'Settings', icon: 'settings', path: '/settings' },
 ];
 
 const isActive = (path: string) => {

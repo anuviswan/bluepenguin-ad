@@ -75,4 +75,35 @@ export class ProductService {
             throw error;
         }
     }
+
+    static async getBySku(sku: string): Promise<Product> {
+        try {
+            const item = await api.get<any>('/api/Product/getbysku', {
+                params: { sku }
+            });
+
+            console.log(`ProductService: Raw item for SKU ${sku}:`, item);
+
+            if (!item) throw new Error('Product not found');
+
+            return {
+                sku: item.sku || item.skuId || 'N/A',
+                name: item.productName || 'Unknown Product',
+                description: item.productDescription,
+                productCare: item.productCareInstructions || item.productCare || [],
+                specifications: item.specifications || [],
+                price: item.price || 0,
+                category: item.categoryCode || '-',
+                material: item.material || '-',
+                featureCodes: item.featureCodes || [],
+                collectionCode: item.collectionCode || '-',
+                yearCode: item.yearCode || 0,
+                sequenceCode: item.sequenceCode || 0,
+                status: item.isActive === false ? 'Draft' : 'Active'
+            };
+        } catch (error) {
+            console.error(`Failed to fetch product with SKU ${sku}:`, error);
+            throw error;
+        }
+    }
 }
