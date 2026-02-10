@@ -3,6 +3,8 @@ import { api } from '../api/api';
 export interface Material {
     id: string;
     name: string;
+    productCount: number;
+    isActive: boolean;
 }
 
 export class MaterialService {
@@ -11,7 +13,9 @@ export class MaterialService {
             const response = await api.get<any[]>('/api/Material/getall');
             return response.map(item => ({
                 id: item.rowKey || item.id || Math.random().toString(),
-                name: item.title || item.name || 'Unknown Material'
+                name: item.title || item.name || 'Unknown Material',
+                productCount: item.productCount || 0,
+                isActive: item.isActive ?? true
             }));
         } catch (error) {
             console.error('Failed to fetch materials:', error);
