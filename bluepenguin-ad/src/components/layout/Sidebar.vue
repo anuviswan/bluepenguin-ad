@@ -1,34 +1,3 @@
-<script setup lang="ts">
-import { useRoute } from 'vue-router';
-
-const route = useRoute();
-
-interface NavItem {
-  name: string;
-  icon: string;
-  path: string;
-}
-
-const navItems: NavItem[] = [
-  { name: 'Dashboard', icon: 'dashboard', path: '/' },
-  { name: 'Products', icon: 'shopping_bag', path: '/products' },
-  { name: 'Categories', icon: 'category', path: '/categories' },
-  { name: 'Collections', icon: 'collections', path: '/collections' },
-  { name: 'Materials', icon: 'texture', path: '/materials' },
-  { name: 'Features', icon: 'auto_awesome', path: '/features' },
-  // { name: 'Inventory', icon: 'inventory', path: '/inventory' },
-  // { name: 'Media Library', icon: 'image', path: '/media' },
-  // { name: 'Orders', icon: 'receipt_long', path: '/orders' },
-  // { name: 'Settings', icon: 'settings', path: '/settings' },
-];
-
-const isActive = (path: string) => {
-  if (path === '/' && route.path === '/') return true;
-  if (path !== '/' && route.path.startsWith(path)) return true;
-  return false;
-};
-</script>
-
 <template>
   <aside class="sidebar">
     <div class="brand">
@@ -51,8 +20,50 @@ const isActive = (path: string) => {
         </li>
       </ul>
     </nav>
+
+    <div class="sidebar-footer">
+      <button @click="handleLogout" class="logout-button">
+        <span class="material-icons-outlined">logout</span>
+        <span class="nav-text">Logout</span>
+      </button>
+    </div>
   </aside>
 </template>
+
+<script setup lang="ts">
+import { useRoute, useRouter } from 'vue-router';
+import { useAuthStore } from '../../stores/auth';
+
+const route = useRoute();
+const router = useRouter();
+const authStore = useAuthStore();
+
+interface NavItem {
+  name: string;
+  icon: string;
+  path: string;
+}
+
+const navItems: NavItem[] = [
+  { name: 'Dashboard', icon: 'dashboard', path: '/d' },
+  { name: 'Products', icon: 'shopping_bag', path: '/products' },
+  { name: 'Categories', icon: 'category', path: '/categories' },
+  { name: 'Collections', icon: 'collections', path: '/collections' },
+  { name: 'Materials', icon: 'texture', path: '/materials' },
+  { name: 'Features', icon: 'auto_awesome', path: '/features' },
+];
+
+const isActive = (path: string) => {
+  if (path === '/' && route.path === '/') return true;
+  if (path !== '/' && route.path.startsWith(path)) return true;
+  return false;
+};
+
+const handleLogout = () => {
+  authStore.clearAuth();
+  router.push('/login');
+};
+</script>
 
 <style scoped>
 .sidebar {
@@ -123,5 +134,33 @@ const isActive = (path: string) => {
 
 .nav-text {
   font-size: 14px;
+}
+
+.sidebar-footer {
+  padding: 16px 12px;
+  border-top: 1px solid var(--border-color);
+}
+
+.logout-button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  padding: 10px 12px;
+  gap: 12px;
+  border: none;
+  background: none;
+  border-radius: var(--radius-sm);
+  color: #ef4444;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.logout-button:hover {
+  background-color: #fef2f2;
+}
+
+.logout-button .material-icons-outlined {
+  font-size: 20px;
 }
 </style>

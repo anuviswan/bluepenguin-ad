@@ -323,49 +323,6 @@
         }
       }
     },
-    "/api/MetaData/feature/create": {
-      "post": {
-        "tags": [
-          "MetaData"
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/MetaDataEntity"
-              }
-            },
-            "text/json": {
-              "schema": {
-                "$ref": "#/components/schemas/MetaDataEntity"
-              }
-            },
-            "application/*+json": {
-              "schema": {
-                "$ref": "#/components/schemas/MetaDataEntity"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/api/MetaData/feature/getall": {
-      "get": {
-        "tags": [
-          "MetaData"
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
     "/api/Product/create": {
       "post": {
         "tags": [
@@ -633,40 +590,6 @@
           "sequenceCode": {
             "type": "integer",
             "format": "int32"
-          }
-        },
-        "additionalProperties": false
-      },
-      "ETag": {
-        "type": "object",
-        "additionalProperties": false
-      },
-      "MetaDataEntity": {
-        "type": "object",
-        "properties": {
-          "partitionKey": {
-            "type": "string",
-            "nullable": true
-          },
-          "rowKey": {
-            "type": "string",
-            "nullable": true
-          },
-          "title": {
-            "type": "string",
-            "nullable": true
-          },
-          "notes": {
-            "type": "string",
-            "nullable": true
-          },
-          "timestamp": {
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
-          },
-          "eTag": {
-            "$ref": "#/components/schemas/ETag"
           }
         },
         "additionalProperties": false

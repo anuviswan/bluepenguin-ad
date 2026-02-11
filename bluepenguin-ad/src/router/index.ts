@@ -5,6 +5,10 @@ const router = createRouter({
   routes: [
     {
       path: '/',
+      redirect: '/d'
+    },
+    {
+      path: '/d',
       name: 'dashboard',
       component: () => import('../views/DashboardView.vue'),
     },
@@ -48,7 +52,28 @@ const router = createRouter({
       name: 'product-details',
       component: () => import('../views/ProductDetailsView.vue'),
     },
+    {
+      path: '/login',
+      name: 'login',
+      component: () => import('../views/LoginView.vue'),
+      meta: { public: true }
+    },
   ],
 })
+
+import { useAuthStore } from '../stores/auth';
+
+router.beforeEach((to, from, next) => {
+  const authStore = useAuthStore();
+  const isPublic = to.matched.some(record => record.meta.public);
+
+  if (!isPublic && !authStore.isAuthenticated) {
+    next({ name: 'login' });
+  } else if (to.name === 'login' && authStore.isAuthenticated) {
+    next({ name: 'dashboard' });
+  } else {
+    next();
+  }
+});
 
 export default router

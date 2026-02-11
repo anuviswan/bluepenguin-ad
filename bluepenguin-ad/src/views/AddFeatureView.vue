@@ -37,9 +37,13 @@ const handleCreate = async () => {
     setTimeout(() => {
       router.push('/features');
     }, 2000);
-  } catch (err) {
-    error.value = 'Failed to create feature. Please try again.';
-    console.error(err);
+  } catch (err: any) {
+    if (err.message && err.message.includes('401')) {
+      error.value = 'Unauthorized: Your session may have expired. Please login again.';
+    } else {
+      error.value = `Failed to create feature: ${err.message || 'Unknown error'}`;
+    }
+    console.error('[Feature Creation Error]', err);
     isSubmitting.value = false;
   }
 };

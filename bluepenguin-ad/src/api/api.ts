@@ -14,25 +14,44 @@ export async function request<T>(endpoint: string, options: RequestOptions = {})
         url += `?${searchParams.toString()}`;
     }
 
+    const token = localStorage.getItem('auth_token');
+    const isValidToken = token && token !== 'null' && token !== 'undefined';
+
+    console.log(`[API Request] ${init.method || 'GET'} ${url}`);
+    if (isValidToken) {
+        console.log(`[API Auth] Sending Bearer token (first 15 chars): ${token.substring(0, 15)}...`);
+    } else {
+        console.log(`[API Auth] No valid token found in localStorage`);
+    }
+
     const response = await fetch(url, {
         ...init,
         headers: {
             'Content-Type': 'application/json',
+            ...(isValidToken ? { 'Authorization': `Bearer ${token}` } : {}),
             ...init.headers,
         },
     });
 
     if (!response.ok) {
-        throw new Error(`API Error: ${response.status} ${response.statusText}`);
+        let errorMessage = `API Error: ${response.status} ${response.statusText}`;
+        try {
+            const errorData = await response.json();
+            if (errorData.message) errorMessage = errorData.message;
+        } catch {
+            // Not JSON error, use default
+        }
+        throw new Error(errorMessage);
     }
 
-    // Handle empty responses
-    const contentType = response.headers.get('content-type');
-    if (contentType && contentType.includes('application/json')) {
-        return await response.json();
-    }
+    const text = await response.text();
+    if (!text) return null as unknown as T;
 
-    return null as unknown as T;
+    try {
+        return JSON.parse(text);
+    } catch {
+        return text as unknown as T;
+    }
 }
 
 export const api = {
