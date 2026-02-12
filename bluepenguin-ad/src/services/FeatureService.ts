@@ -53,4 +53,27 @@ export class FeatureService {
             symbolic: symbolicText
         });
     }
+
+    static async getById(id: string): Promise<Feature | null> {
+        try {
+            const features = await this.getAll();
+            return features.find(f => f.id === id) || null;
+        } catch (error) {
+            console.error(`Failed to fetch feature with ID ${id}:`, error);
+            throw error;
+        }
+    }
+
+    static async update(id: string, name: string, symbolicText?: string): Promise<void> {
+        try {
+            await api.put('/api/Feature/update', {
+                featureId: id,
+                featureName: name,
+                symbolic: symbolicText
+            });
+        } catch (error) {
+            console.error(`Failed to update feature with ID ${id}:`, error);
+            throw error;
+        }
+    }
 }

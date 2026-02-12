@@ -28,6 +28,11 @@ const router = createRouter({
       component: () => import('../views/AddFeatureView.vue'),
     },
     {
+      path: '/features/edit/:id',
+      name: 'edit-feature',
+      component: () => import('../views/EditFeatureView.vue'),
+    },
+    {
       path: '/collections',
       name: 'collections',
       component: () => import('../views/CollectionListView.vue'),
@@ -36,6 +41,11 @@ const router = createRouter({
       path: '/collections/add',
       name: 'add-collection',
       component: () => import('../views/AddCollectionView.vue'),
+    },
+    {
+      path: '/collections/edit/:id',
+      name: 'edit-collection',
+      component: () => import('../views/EditCollectionView.vue'),
     },
     {
       path: '/materials',
