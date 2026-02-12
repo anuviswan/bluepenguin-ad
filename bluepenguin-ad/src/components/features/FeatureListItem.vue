@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useRouter } from 'vue-router';
+
 interface Feature {
   id: string;
   name: string;
@@ -7,9 +9,15 @@ interface Feature {
   isActive: boolean;
 }
 
-defineProps<{
+const props = defineProps<{
   feature: Feature;
 }>();
+
+const router = useRouter();
+
+const handleEdit = () => {
+  router.push(`/features/edit/${props.feature.id}`);
+};
 </script>
 
 <template>
@@ -43,11 +51,8 @@ defineProps<{
     </div>
 
     <div class="col-actions item-actions">
-      <button class="btn-icon edit" title="Edit">
+      <button class="btn-icon edit" title="Edit" @click="handleEdit">
         <span class="material-icons-outlined">edit</span>
-      </button>
-      <button class="btn-icon delete" title="Delete">
-        <span class="material-icons-outlined">delete_outline</span>
       </button>
       <span class="material-icons-outlined more-icon">more_vert</span>
     </div>
@@ -152,15 +157,6 @@ defineProps<{
 .btn-icon.edit:hover {
   background-color: var(--bg-main);
   color: var(--primary-color);
-}
-
-.btn-icon.delete {
-  color: var(--danger-color);
-}
-
-.btn-icon.delete:hover {
-  background-color: #fff5f5;
-  color: #c53030;
 }
 
 .more-icon {

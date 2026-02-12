@@ -25,9 +25,31 @@ export class CollectionService {
 
     static async create(id: string, name: string): Promise<void> {
         await api.post('/api/Collection/create', {
-            featureId: id, // Based on bp.webapi.json, it uses AddFeatureRequest schema
-            featureName: name
+            collectionId: id,
+            collectionName: name
         });
+    }
+
+    static async getById(id: string): Promise<Collection | null> {
+        try {
+            const collections = await this.getAll();
+            return collections.find(c => c.id === id) || null;
+        } catch (error) {
+            console.error(`Failed to fetch collection with ID ${id}:`, error);
+            throw error;
+        }
+    }
+
+    static async update(id: string, name: string): Promise<void> {
+        try {
+            await api.put('/api/Collection/update', {
+                collectionId: id,
+                collectionName: name
+            });
+        } catch (error) {
+            console.error(`Failed to update collection with ID ${id}:`, error);
+            throw error;
+        }
     }
 }
 

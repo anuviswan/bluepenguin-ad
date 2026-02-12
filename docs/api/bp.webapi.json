@@ -125,17 +125,48 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/AddFeatureRequest"
+                "$ref": "#/components/schemas/AddCollectionRequest"
               }
             },
             "text/json": {
               "schema": {
-                "$ref": "#/components/schemas/AddFeatureRequest"
+                "$ref": "#/components/schemas/AddCollectionRequest"
               }
             },
             "application/*+json": {
               "schema": {
-                "$ref": "#/components/schemas/AddFeatureRequest"
+                "$ref": "#/components/schemas/AddCollectionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Collection/update": {
+      "put": {
+        "tags": [
+          "Collection"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddCollectionRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddCollectionRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddCollectionRequest"
               }
             }
           }
@@ -161,6 +192,37 @@
     },
     "/api/Feature/create": {
       "post": {
+        "tags": [
+          "Feature"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddFeatureRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddFeatureRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddFeatureRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Feature/update": {
+      "put": {
         "tags": [
           "Feature"
         ],
@@ -485,6 +547,20 @@
   },
   "components": {
     "schemas": {
+      "AddCollectionRequest": {
+        "type": "object",
+        "properties": {
+          "collectionId": {
+            "type": "string",
+            "nullable": true
+          },
+          "collectionName": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "AddFeatureRequest": {
         "type": "object",
         "properties": {
