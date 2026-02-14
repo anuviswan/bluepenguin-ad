@@ -109,6 +109,11 @@ Avoid:
 
 # 6. Testing Requirements
 
+- Compilation and Errors
+  - Code should compile without any errors or warnings
+  - no html errors should occured when page is loaded
+
+
 - Unit tests required for:
   - Stores
   - Composables
