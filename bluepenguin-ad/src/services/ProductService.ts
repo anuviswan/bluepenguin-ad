@@ -43,12 +43,13 @@ export class ProductService {
                     specifications: item.specifications || [],
                     price: item.price || 0,
                     category: item.categoryCode || '-',
-                    material: item.material || '-',
+                    material: item.materialCode || item.material || item.productMaterial || '-',
                     featureCodes: item.featureCodes || [],
                     collectionCode: item.collectionCode || '-',
                     yearCode: item.yearCode || 0,
                     sequenceCode: item.sequenceCode || extractedSeq,
-                    status: 'Active' // Mapping everything to Active status
+                    status: item.isActive === false ? 'Draft' : 'Active',
+                    stock: item.stock || 0
                 };
             });
 
