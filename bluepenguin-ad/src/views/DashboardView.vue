@@ -2,9 +2,6 @@
 import MainLayout from '../components/layout/MainLayout.vue';
 import SummaryCard from '../components/dashboard/SummaryCard.vue';
 import ProductTable from '../components/dashboard/ProductTable.vue';
-import RecentlyEditedList from '../components/dashboard/RecentlyEditedList.vue';
-import LowInventoryList from '../components/dashboard/LowInventoryList.vue';
-import QuickLinks from '../components/dashboard/QuickLinks.vue';
 import { ref, onMounted } from 'vue';
 import { ProductService } from '../services/ProductService';
 import { CollectionService } from '../services/CollectionService';
@@ -84,8 +81,7 @@ const fetchStats = async () => {
         title: 'Materials Used', 
         list: materialList,
         value: materialList.length === 0 ? 'No materials recorded' : undefined,
-        icon: 'texture',
-        trend: { value: `${products.length} products`, isUp: true } 
+        icon: 'texture'
       },
       { 
         title: 'Out of Stock', 
@@ -131,13 +127,6 @@ onMounted(() => {
       </div>
 
       <ProductTable />
-
-      <div class="activity-grid">
-        <RecentlyEditedList />
-        <LowInventoryList />
-      </div>
-
-      <QuickLinks />
     </div>
   </MainLayout>
 </template>
@@ -153,17 +142,5 @@ onMounted(() => {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 24px;
-}
-
-.activity-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 24px;
-}
-
-@media (max-width: 1024px) {
-  .activity-grid {
-    grid-template-columns: 1fr;
-  }
 }
 </style>
