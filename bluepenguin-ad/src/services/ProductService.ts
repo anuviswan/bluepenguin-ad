@@ -14,6 +14,7 @@ export interface Product {
     yearCode: number;
     sequenceCode: number;
     status: string;
+    stock?: number;
 }
 
 export class ProductService {
@@ -30,21 +31,26 @@ export class ProductService {
             const items = Array.isArray(response) ? response : (response.items || []);
             const totalCount = Array.isArray(response) ? items.length : (response.totalCount || items.length);
 
-            const products = items.map(item => ({
-                sku: item.sku || item.skuId || 'N/A',
-                name: item.productName || 'Unknown Product',
-                description: item.description,
-                productCare: item.productCare || [],
-                specifications: item.specifications || [],
-                price: item.price || 0,
-                category: item.categoryCode || '-',
-                material: item.material || '-',
-                featureCodes: item.featureCodes || [],
-                collectionCode: item.collectionCode || '-',
-                yearCode: item.yearCode || 0,
-                sequenceCode: item.sequenceCode || 0,
-                status: 'Active' // Mapping everything to Active status
-            }));
+            const products = items.map(item => {
+                const skuVal = item.sku || item.skuId || 'N/A';
+                const extractedSeq = skuVal.length >= 2 ? parseInt(skuVal.slice(-2)) : 0;
+
+                return {
+                    sku: skuVal,
+                    name: item.productName || 'Unknown Product',
+                    description: item.description,
+                    productCare: item.productCare || [],
+                    specifications: item.specifications || [],
+                    price: item.price || 0,
+                    category: item.categoryCode || '-',
+                    material: item.material || '-',
+                    featureCodes: item.featureCodes || [],
+                    collectionCode: item.collectionCode || '-',
+                    yearCode: item.yearCode || 0,
+                    sequenceCode: item.sequenceCode || extractedSeq,
+                    status: 'Active' // Mapping everything to Active status
+                };
+            });
 
             return { products, totalCount };
         } catch (error) {
@@ -86,23 +92,44 @@ export class ProductService {
 
             if (!item) throw new Error('Product not found');
 
+            const skuVal = item.sku || item.skuId || 'N/A';
+            const extractedSeq = skuVal.length >= 2 ? parseInt(skuVal.slice(-2)) : 0;
+
             return {
-                sku: item.sku || item.skuId || 'N/A',
+                sku: skuVal,
                 name: item.productName || 'Unknown Product',
-                description: item.productDescription,
+                description: item.productDescription || item.description,
                 productCare: item.productCareInstructions || item.productCare || [],
                 specifications: item.specifications || [],
                 price: item.price || 0,
-                category: item.categoryCode || '-',
-                material: item.material || '-',
+                category: item.categoryCode || item.category || '-',
+                material: item.materialCode || item.material || item.productMaterial || '-',
                 featureCodes: item.featureCodes || [],
-                collectionCode: item.collectionCode || '-',
+                collectionCode: item.collectionCode || item.collection || '-',
                 yearCode: item.yearCode || 0,
-                sequenceCode: item.sequenceCode || 0,
-                status: item.isActive === false ? 'Draft' : 'Active'
+                sequenceCode: item.sequenceCode || extractedSeq,
+                status: item.isActive === false ? 'Draft' : 'Active',
+                stock: item.stock || 0
             };
         } catch (error) {
             console.error(`Failed to fetch product with SKU ${sku}:`, error);
+            throw error;
+        }
+    }
+
+    static async update(product: Partial<Product>): Promise<void> {
+        try {
+            await api.put('/api/Product/update', {
+                sku: product.sku,
+                productName: product.name,
+                description: product.description,
+                specifications: product.specifications,
+                productCareInstructions: product.productCare,
+                price: product.price,
+                stock: product.stock,
+            });
+        } catch (error) {
+            console.error(`Failed to update product with SKU ${product.sku}:`, error);
             throw error;
         }
     }

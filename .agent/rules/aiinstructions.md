@@ -57,6 +57,7 @@ Components must follow:
 - No direct Axios/fetch usage inside components.
 - API responses must be typed with TypeScript interfaces.
 - No `any` allowed.
+- Refer to "docs\api\bp.webapi.json" for api documentation while implementing api calls
 
 ## 2.4 TypeScript Rules
 

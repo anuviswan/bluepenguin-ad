@@ -109,6 +109,21 @@ const fetchData = async () => {
   }
 };
 
+const getCategoryName = (code: string) => {
+  const item = categories.value.find(c => c.id === code);
+  return item ? `${item.name} (${code})` : code;
+};
+
+const getCollectionName = (code: string) => {
+  const item = collections.value.find(c => c.id === code);
+  return item ? `${item.name} (${code})` : code;
+};
+
+const getMaterialName = (code: string) => {
+  const item = materials.value.find(m => m.id === code);
+  return item ? `${item.name} (${code})` : code;
+};
+
 onMounted(() => {
   fetchData();
 });
@@ -181,6 +196,7 @@ onMounted(() => {
             <th>Name</th>
             <th>Category</th>
             <th>Collection</th>
+            <th>Material</th>
             <th>Price</th>
             <th>Status</th>
             <th></th>
@@ -190,8 +206,9 @@ onMounted(() => {
                 <tr v-for="product in filteredProducts" :key="product.sku" @click="router.push(`/products/${product.sku}`)" class="clickable-row">
             <td>{{ product.sku }}</td>
             <td class="product-name">{{ product.name }}</td>
-            <td>{{ product.category }}</td>
-            <td>{{ product.collectionCode }}</td>
+            <td>{{ getCategoryName(product.category) }}</td>
+            <td>{{ getCollectionName(product.collectionCode) }}</td>
+            <td>{{ getMaterialName(product.material) }}</td>
             <td>₹{{ product.price }}</td>
             <td>
               <span :class="['badge', product.status === 'Active' ? 'badge-success' : 'badge-warning']">
@@ -204,7 +221,7 @@ onMounted(() => {
             </td>
           </tr>
           <tr v-if="filteredProducts.length === 0">
-            <td colspan="7" class="text-center p-8 text-muted">No products found for the selected filters.</td>
+            <td colspan="8" class="text-center p-8 text-muted">No products found for the selected filters.</td>
           </tr>
         </tbody>
       </table>

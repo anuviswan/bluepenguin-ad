@@ -4,6 +4,10 @@ import { useRoute, useRouter } from 'vue-router';
 import MainLayout from '../components/layout/MainLayout.vue';
 import { ProductService, type Product } from '../services/ProductService';
 import { FeatureService, type Feature } from '../services/FeatureService';
+import { CategoryService, type Category } from '../services/CategoryService';
+import { CollectionService, type Collection } from '../services/CollectionService';
+import { MaterialService, type Material } from '../services/MaterialService';
+import { FileUploadService } from '../services/FileUploadService';
 
 const route = useRoute();
 const router = useRouter();
@@ -11,6 +15,10 @@ const sku = route.params.sku as string;
 
 const product = ref<Product | null>(null);
 const features = ref<Feature[]>([]);
+const categories = ref<Category[]>([]);
+const collections = ref<Collection[]>([]);
+const materials = ref<Material[]>([]);
+const productImages = ref<string[]>([]);
 const isLoading = ref(true);
 const error = ref<string | null>(null);
 
@@ -30,14 +38,14 @@ const fetchProductAndMetadata = async () => {
     // Once we have product data, we can stop showing the main loading spinner
     isLoading.value = false;
 
-    // Fetch features metadata in background
-    try {
-      console.log('ProductDetailsView: Fetching features...');
-      features.value = await FeatureService.getAll();
-      console.log('ProductDetailsView: Features count:', features.value.length);
-    } catch (fErr) {
-      console.warn('ProductDetailsView: Optional features fetch failed:', fErr);
-    }
+    // Fetch metadata in background
+    Promise.all([
+      FeatureService.getAll().then(res => features.value = res).catch(e => console.warn('Features fetch failed', e)),
+      CategoryService.getAll().then(res => categories.value = res).catch(e => console.warn('Categories fetch failed', e)),
+      CollectionService.getAll().then(res => collections.value = res).catch(e => console.warn('Collections fetch failed', e)),
+      MaterialService.getAll().then(res => materials.value = res).catch(e => console.warn('Materials fetch failed', e)),
+      FileUploadService.getAllImagesForSku(currentSku).then(res => productImages.value = res).catch(e => console.warn('Images fetch failed', e))
+    ]);
   } catch (err) {
     console.error('ProductDetailsView: Fatal fetch error:', err);
     error.value = 'Failed to load product details. Please try again later.';
@@ -45,9 +53,29 @@ const fetchProductAndMetadata = async () => {
   }
 };
 
+const getCategoryName = (code: string) => {
+  const item = categories.value.find(c => c.id === code);
+  return item ? `${item.name} (${code})` : code;
+};
+
+const getCollectionName = (code: string) => {
+  const item = collections.value.find(c => c.id === code);
+  return item ? `${item.name} (${code})` : code;
+};
+
+const getMaterialName = (code: string) => {
+  const item = materials.value.find(m => m.id === code);
+  return item ? `${item.name} (${code})` : code;
+};
+
 const getFeatureName = (code: string) => {
   const feature = features.value.find(f => f.id === code);
   return feature ? feature.name : code;
+};
+
+const getImageUrl = (imageId: string) => {
+  const skuVal = (route.params.sku as string) || product.value?.sku || '';
+  return FileUploadService.getImageUrl(skuVal, imageId);
 };
 
 const productFeatures = computed(() => {
@@ -95,10 +123,10 @@ const goBack = () => {
           </span>
         </div>
         <div class="header-actions flex gap-4">
-          <button class="btn btn-outline flex align-center gap-2">
+          <router-link :to="`/products/edit/${sku}`" class="btn btn-outline flex align-center gap-2">
             <span class="material-icons-outlined">edit</span>
             Edit Product
-          </button>
+          </router-link>
         </div>
       </div>
 
@@ -117,6 +145,15 @@ const goBack = () => {
         <div class="details-grid">
           <!-- Left Column - Main Info -->
           <div class="main-column flex-column gap-6">
+            <div v-if="productImages.length > 0" class="card p-6">
+              <h3 class="section-title">Product Images</h3>
+              <div class="image-gallery mt-4">
+                <div v-for="imageId in productImages" :key="imageId" class="gallery-item">
+                  <img :src="getImageUrl(imageId)" alt="Product" />
+                </div>
+              </div>
+            </div>
+
             <div class="card p-6">
               <h3 class="section-title">General Information</h3>
               <div class="info-grid mt-4">
@@ -130,15 +167,15 @@ const goBack = () => {
                 </div>
                 <div class="info-item">
                   <label>Category</label>
-                  <span>{{ product.category }}</span>
+                  <span>{{ getCategoryName(product.category) }}</span>
                 </div>
                 <div class="info-item">
                   <label>Material</label>
-                  <span>{{ product.material }}</span>
+                  <span>{{ getMaterialName(product.material) }}</span>
                 </div>
                 <div class="info-item">
                   <label>Collection</label>
-                  <span>{{ product.collectionCode }}</span>
+                  <span>{{ getCollectionName(product.collectionCode) }}</span>
                 </div>
                 <div class="info-item">
                   <label>Year / Sequence</label>
@@ -369,5 +406,23 @@ const goBack = () => {
   .details-grid {
     grid-template-columns: 1fr;
   }
+}
+.image-gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 16px;
+}
+
+.gallery-item {
+  aspect-ratio: 1;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+}
+
+.gallery-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 </style>
