@@ -46,7 +46,7 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { name: 'Dashboard', icon: 'dashboard', path: '/d' },
-  { name: 'Products', icon: 'shopping_bag', path: '/products' },
+  { name: 'Products', icon: 'shopping_bag', path: '/products/create' },
   { name: 'Categories', icon: 'category', path: '/categories' },
   { name: 'Collections', icon: 'collections', path: '/collections' },
   { name: 'Materials', icon: 'texture', path: '/materials' },
