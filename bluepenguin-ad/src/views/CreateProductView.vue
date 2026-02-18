@@ -432,8 +432,9 @@ const removeImage = (index: number) => {
 
 <style scoped>
 .create-product-page {
-  max-width: 1000px;
-  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
 .breadcrumbs {

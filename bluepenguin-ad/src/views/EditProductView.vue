@@ -514,8 +514,9 @@ const getImageUrl = (imageId: string) => {
 
 <style scoped>
 .edit-product-page {
-  max-width: 1000px;
-  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
 .breadcrumbs {
