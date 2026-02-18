@@ -5,6 +5,7 @@ import { ProductService, type Product } from '../../services/ProductService';
 import { CategoryService } from '../../services/CategoryService';
 import { CollectionService } from '../../services/CollectionService';
 import { MaterialService } from '../../services/MaterialService';
+import { FileUploadService } from '../../services/FileUploadService';
 
 const products = ref<Product[]>([]);
 const totalCount = ref(0);
@@ -12,6 +13,7 @@ const categories = ref<{id: string, name: string}[]>([]);
 const collections = ref<{id: string, name: string}[]>([]);
 const materials = ref<{id: string, name: string}[]>([]);
 const statuses = ref<string[]>(['Status', 'Active', 'Out of Stock', 'Draft', 'Archived']);
+const productThumbnails = ref<Record<string, string | null>>({});
 
 const router = useRouter();
 
@@ -77,12 +79,31 @@ const fetchProducts = async () => {
     const { products: data, totalCount: count } = await ProductService.getAll(currentPage.value, pageSize.value);
     products.value = data;
     totalCount.value = count;
+    // Load thumbnails for the visible products
+    loadThumbnails(data);
   } catch (err) {
     console.error('Failed to fetch products:', err);
     error.value = 'Failed to load products.';
   } finally {
     isLoading.value = false;
   }
+};
+
+const loadThumbnails = async (productList: Product[]) => {
+  // Reset or just update the visible ones
+  // For better performance, we only fetch for products we don't have yet if they are in the current list
+  const fetchPromises = productList.map(async (product) => {
+    if (!productThumbnails.value[product.sku]) {
+      try {
+        const url = await FileUploadService.getThumbnailUrl(product.sku);
+        productThumbnails.value[product.sku] = url;
+      } catch (err) {
+        console.warn(`Failed to fetch thumbnail for ${product.sku}`, err);
+        productThumbnails.value[product.sku] = null;
+      }
+    }
+  });
+  await Promise.all(fetchPromises);
 };
 
 const fetchData = async () => {
@@ -101,6 +122,9 @@ const fetchData = async () => {
     categories.value = categoriesData.map(c => ({ id: c.id, name: c.name }));
     collections.value = collectionsData.map(c => ({ id: c.id, name: c.name }));
     materials.value = materialsData.map(m => ({ id: m.id, name: m.name }));
+    
+    // Load thumbnails
+    loadThumbnails(productsResult.products);
   } catch (err) {
     console.error('Failed to fetch dashboard data:', err);
     error.value = 'Failed to load dashboard data. Please try again later.';
@@ -192,6 +216,7 @@ onMounted(() => {
       <table>
         <thead>
           <tr>
+            <th>Image</th>
             <th>SKU</th>
             <th>Name</th>
             <th>Category</th>
@@ -204,6 +229,14 @@ onMounted(() => {
         </thead>
         <tbody>
                 <tr v-for="product in filteredProducts" :key="product.sku" @click="router.push(`/products/${product.sku}`)" class="clickable-row">
+            <td>
+              <div class="thumbnail-wrapper">
+                <img v-if="productThumbnails[product.sku]" :src="productThumbnails[product.sku]!" alt="Thumbnail" class="thumbnail" />
+                <div v-else class="thumbnail-placeholder">
+                  <span class="material-icons-outlined">image</span>
+                </div>
+              </div>
+            </td>
             <td>{{ product.sku }}</td>
             <td class="product-name">{{ product.name }}</td>
             <td>{{ getCategoryName(product.category) }}</td>
@@ -221,7 +254,7 @@ onMounted(() => {
             </td>
           </tr>
           <tr v-if="filteredProducts.length === 0">
-            <td colspan="8" class="text-center p-8 text-muted">No products found for the selected filters.</td>
+            <td colspan="9" class="text-center p-8 text-muted">No products found for the selected filters.</td>
           </tr>
         </tbody>
       </table>
@@ -347,9 +380,39 @@ th {
 }
 
 td {
-  padding: 16px 12px;
+  padding: 12px;
   font-size: 13px;
   border-bottom: 1px solid var(--border-color);
+  vertical-align: middle;
+}
+
+.thumbnail-wrapper {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background-color: var(--bg-main);
+  border: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.thumbnail {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.thumbnail-placeholder {
+  color: #ccc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.thumbnail-placeholder .material-icons-outlined {
+  font-size: 20px;
 }
 
 .product-name {
