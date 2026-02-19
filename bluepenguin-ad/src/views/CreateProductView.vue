@@ -105,9 +105,26 @@ const handleCancel = () => {
 };
 
 const handlePublish = async () => {
-  if (!product.value.sku || !product.value.name) {
-    error.value = 'SKU and Product Name are required';
-    activeTab.value = 'basic';
+  const missingFields = [];
+  if (!product.value.sku) missingFields.push('SKU');
+  if (!product.value.name) missingFields.push('Product Name');
+  if (!product.value.category) missingFields.push('Category');
+  if (!product.value.collectionCode) missingFields.push('Collection');
+  if (!product.value.material) missingFields.push('Material');
+  if (product.value.featureCodes.length === 0) missingFields.push('Features');
+  if (selectedFiles.value.length === 0) missingFields.push('Images');
+
+  if (missingFields.length > 0) {
+    error.value = `The following fields are required: ${missingFields.join(', ')}`;
+    
+    // Navigate to the first tab with an error
+    if (!product.value.sku || !product.value.name || !product.value.category || !product.value.collectionCode || !product.value.material) {
+      activeTab.value = 'basic';
+    } else if (product.value.featureCodes.length === 0) {
+      activeTab.value = 'features';
+    } else if (selectedFiles.value.length === 0) {
+      activeTab.value = 'images';
+    }
     return;
   }
 
@@ -137,12 +154,59 @@ const toggleFeature = (code: string) => {
   }
 };
 
+const validateTab = (tabId: string): boolean => {
+  error.value = null;
+  if (tabId === 'basic') {
+    const missing = [];
+    if (!product.value.name) missing.push('Product Name');
+    if (!product.value.sku) missing.push('SKU');
+    if (!product.value.category) missing.push('Category');
+    if (!product.value.collectionCode) missing.push('Collection');
+    if (!product.value.material) missing.push('Material');
+    
+    if (missing.length > 0) {
+      error.value = `Please fill in mandatory fields: ${missing.join(', ')}`;
+      return false;
+    }
+  } else if (tabId === 'features') {
+    if (product.value.featureCodes.length === 0) {
+      error.value = 'Please select at least one feature.';
+      return false;
+    }
+  } else if (tabId === 'images') {
+    if (selectedFiles.value.length === 0) {
+      error.value = 'Please upload at least one image.';
+      return false;
+    }
+  }
+  return true;
+};
+
 const nextTab = () => {
+  if (!validateTab(activeTab.value)) return;
+  
   const currentIndex = tabs.findIndex(t => t.id === activeTab.value);
   if (currentIndex !== -1 && currentIndex < tabs.length - 1) {
     const next = tabs[currentIndex + 1];
     if (next) activeTab.value = next.id;
   }
+};
+
+const switchTab = (tabId: string) => {
+  const currentIndex = tabs.findIndex(t => t.id === activeTab.value);
+  const targetIndex = tabs.findIndex(t => t.id === tabId);
+  
+  if (targetIndex > currentIndex) {
+    // Going forward, validate all tabs between current and target
+    for (let i = currentIndex; i < targetIndex; i++) {
+      if (!validateTab(tabs[i].id)) {
+        // Stop at the first invalid tab
+        activeTab.value = tabs[i].id;
+        return;
+      }
+    }
+  }
+  activeTab.value = tabId;
 };
 
 const prevTab = () => {
@@ -207,7 +271,7 @@ const removeImage = (index: number) => {
           :key="tab.id"
           class="tab-btn"
           :class="{ active: activeTab === tab.id }"
-          @click="activeTab = tab.id"
+          @click="switchTab(tab.id)"
         >
           <span class="step-num">{{ index + 1 }}</span>
           {{ tab.label }}
@@ -219,12 +283,12 @@ const removeImage = (index: number) => {
         <div v-if="activeTab === 'basic'" class="tab-pane">
           <div class="form-grid">
             <div class="form-section">
-              <label for="name">Product Name</label>
+              <label for="name">Product Name <span class="required">*</span></label>
               <input id="name" v-model="product.name" type="text" placeholder="Product Name" class="form-input" />
             </div>
 
             <div class="form-section">
-              <label for="sku">SKU</label>
+              <label for="sku">SKU <span class="required">*</span></label>
               <input id="sku" v-model="product.sku" type="text" placeholder="e.g. SKU-12345" class="form-input" />
             </div>
 
@@ -234,7 +298,7 @@ const removeImage = (index: number) => {
             </div>
 
             <div class="form-section">
-              <label for="category">Category</label>
+              <label for="category">Category <span class="required">*</span></label>
               <div class="select-wrapper">
                 <select id="category" v-model="product.category" class="form-input">
                   <option value="">Select Category</option>
@@ -245,7 +309,7 @@ const removeImage = (index: number) => {
             </div>
 
             <div class="form-section">
-              <label for="collection">Collection</label>
+              <label for="collection">Collection <span class="required">*</span></label>
               <div class="select-wrapper">
                 <select id="collection" v-model="product.collectionCode" class="form-input">
                   <option value="">Select Collection</option>
@@ -256,7 +320,7 @@ const removeImage = (index: number) => {
             </div>
 
             <div class="form-section">
-              <label for="material">Material</label>
+              <label for="material">Material <span class="required">*</span></label>
               <div class="select-wrapper">
                 <select id="material" v-model="product.material" class="form-input">
                   <option value="">Select Material</option>
@@ -327,7 +391,7 @@ const removeImage = (index: number) => {
         <!-- Features Tab -->
         <div v-if="activeTab === 'features'" class="tab-pane">
           <div class="form-section">
-            <label>Select Features</label>
+            <label>Select Features <span class="required">*</span></label>
             <div class="feature-grid mt-4">
               <div 
                 v-for="f in features" 
@@ -355,7 +419,7 @@ const removeImage = (index: number) => {
           
           <div class="upload-area" @click="triggerBrowse">
             <span class="material-icons-outlined upload-icon">cloud_upload</span>
-            <p>Drag & drop images here, or <span class="browse-link">Browse</span></p>
+            <p>Drag & drop images here, or <span class="browse-link">Browse</span> <span class="required">*</span></p>
             <p class="upload-hint">Recommended size: 800x800px</p>
           </div>
 
@@ -535,6 +599,13 @@ const removeImage = (index: number) => {
   font-weight: 500;
   font-size: 14px;
   color: var(--text-main);
+  display: flex;
+  align-items: center;
+}
+
+.required {
+  color: var(--danger-color);
+  margin-left: 4px;
 }
 
 .form-input {
