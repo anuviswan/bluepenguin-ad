@@ -7,6 +7,7 @@ import { CategoryService } from '../services/CategoryService';
 import { CollectionService } from '../services/CollectionService';
 import { MaterialService } from '../services/MaterialService';
 import { FeatureService } from '../services/FeatureService';
+import { FileUploadService } from '../services/FileUploadService';
 
 const router = useRouter();
 
@@ -46,6 +47,7 @@ const features = ref<{id: string, name: string}[]>([]);
 
 const isLoading = ref(false);
 const isSubmitting = ref(false);
+const isUploading = ref(false);
 const error = ref<string | null>(null);
 const successMessage = ref<string | null>(null);
 
@@ -135,7 +137,26 @@ const handlePublish = async () => {
   error.value = null;
   
   try {
-    await ProductService.create(product.value);
+    const result = await ProductService.create(product.value);
+    
+    // Determine SKU for image upload
+    const skuToUse = product.value.sku || (typeof result === 'string' ? result : (result?.sku || result?.skuId));
+    
+    if (skuToUse && selectedFiles.value.length > 0) {
+      isUploading.value = true;
+      successMessage.value = 'Product created! Uploading images...';
+      try {
+        await Promise.all(selectedFiles.value.map((file, index) => 
+          FileUploadService.uploadImage(skuToUse, file, index === 0)
+        ));
+      } catch (uploadErr) {
+        console.error('Some images failed to upload', uploadErr);
+        error.value = 'Product created, but some images failed to upload.';
+      } finally {
+        isUploading.value = false;
+      }
+    }
+
     successMessage.value = 'Product created successfully! Redirecting...';
     setTimeout(() => {
       router.push('/');
@@ -488,8 +509,8 @@ const removeImage = (index: number) => {
               <button class="btn btn-outline" @click="() => { if (product) { product.status = 'Draft'; handlePublish(); } }" :disabled="isSubmitting">
                 Save as Draft
               </button>
-              <button class="btn btn-primary" @click="handlePublish" :disabled="isSubmitting">
-                {{ isSubmitting ? 'Publishing...' : 'Publish Product' }}
+              <button class="btn btn-primary" @click="handlePublish" :disabled="isSubmitting || isUploading">
+                {{ isSubmitting ? 'Publishing...' : (isUploading ? 'Uploading Images...' : 'Publish Product') }}
               </button>
             </template>
           </div>

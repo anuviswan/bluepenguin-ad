@@ -60,9 +60,9 @@ export class ProductService {
         }
     }
 
-    static async create(product: Partial<Product>): Promise<void> {
+    static async create(product: Partial<Product>): Promise<any> {
         try {
-            await api.post('/api/Product/create', {
+            return await api.post<any>('/api/Product/create', {
                 productName: product.name,
                 description: product.description,
                 productCareInstructions: product.productCare,
