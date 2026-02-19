@@ -39,7 +39,7 @@ const filteredProducts = computed(() => {
     // Search filter (Name or SKU)
     const matchesSearch = !searchQuery.value || 
       product.name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-      product.sku.toLowerCase().includes(searchQuery.value.toLowerCase());
+      (product.sku?.toLowerCase().includes(searchQuery.value.toLowerCase()) ?? false);
 
     // Category filter
     const matchesCategory = !selectedCategory.value || 
@@ -93,13 +93,14 @@ const loadThumbnails = async (productList: Product[]) => {
   // Reset or just update the visible ones
   // For better performance, we only fetch for products we don't have yet if they are in the current list
   const fetchPromises = productList.map(async (product) => {
-    if (!productThumbnails.value[product.sku]) {
+    const sku = product.sku || 'N/A';
+    if (!productThumbnails.value[sku]) {
       try {
-        const url = await FileUploadService.getThumbnailUrl(product.sku);
-        productThumbnails.value[product.sku] = url;
+        const url = await FileUploadService.getThumbnailUrl(sku);
+        productThumbnails.value[sku] = url;
       } catch (err) {
-        console.warn(`Failed to fetch thumbnail for ${product.sku}`, err);
-        productThumbnails.value[product.sku] = null;
+        console.warn(`Failed to fetch thumbnail for ${sku}`, err);
+        productThumbnails.value[sku] = null;
       }
     }
   });
@@ -228,10 +229,10 @@ onMounted(() => {
           </tr>
         </thead>
         <tbody>
-                <tr v-for="product in filteredProducts" :key="product.sku" @click="router.push(`/products/${product.sku}`)" class="clickable-row">
+                <tr v-for="product in filteredProducts" :key="product.sku || product.name" @click="router.push(`/products/${product.sku || 'N/A'}`)" class="clickable-row">
             <td>
               <div class="thumbnail-wrapper">
-                <img v-if="productThumbnails[product.sku]" :src="productThumbnails[product.sku]!" alt="Thumbnail" class="thumbnail" />
+                <img v-if="product.sku && productThumbnails[product.sku]" :src="productThumbnails[product.sku]!" alt="Thumbnail" class="thumbnail" />
                 <div v-else class="thumbnail-placeholder">
                   <span class="material-icons-outlined">image</span>
                 </div>

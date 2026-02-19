@@ -2,7 +2,7 @@
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import MainLayout from '../components/layout/MainLayout.vue';
-import { ProductService } from '../services/ProductService';
+import { ProductService, type Product } from '../services/ProductService';
 import { CategoryService } from '../services/CategoryService';
 import { CollectionService } from '../services/CollectionService';
 import { MaterialService } from '../services/MaterialService';
@@ -22,7 +22,7 @@ const tabs = [
 ];
 
 // Form data
-const product = ref({
+const product = ref<Partial<Product>>({
   sku: '',
   name: '',
   description: '',
@@ -54,25 +54,29 @@ const newItemCare = ref('');
 const newItemSpec = ref('');
 
 const addCareItem = () => {
-  if (newItemCare.value.trim()) {
+  if (newItemCare.value.trim() && product.value.productCare) {
     product.value.productCare.push(newItemCare.value.trim());
     newItemCare.value = '';
   }
 };
 
 const removeCareItem = (index: number) => {
-  product.value.productCare.splice(index, 1);
+  if (product.value.productCare) {
+    product.value.productCare.splice(index, 1);
+  }
 };
 
 const addSpecItem = () => {
-  if (newItemSpec.value.trim()) {
+  if (newItemSpec.value.trim() && product.value.specifications) {
     product.value.specifications.push(newItemSpec.value.trim());
     newItemSpec.value = '';
   }
 };
 
 const removeSpecItem = (index: number) => {
-  product.value.specifications.splice(index, 1);
+  if (product.value.specifications) {
+    product.value.specifications.splice(index, 1);
+  }
 };
 
 const fetchData = async () => {
@@ -106,21 +110,20 @@ const handleCancel = () => {
 
 const handlePublish = async () => {
   const missingFields = [];
-  if (!product.value.sku) missingFields.push('SKU');
   if (!product.value.name) missingFields.push('Product Name');
   if (!product.value.category) missingFields.push('Category');
   if (!product.value.collectionCode) missingFields.push('Collection');
   if (!product.value.material) missingFields.push('Material');
-  if (product.value.featureCodes.length === 0) missingFields.push('Features');
+  if (product.value.featureCodes && product.value.featureCodes.length === 0) missingFields.push('Features');
   if (selectedFiles.value.length === 0) missingFields.push('Images');
 
   if (missingFields.length > 0) {
     error.value = `The following fields are required: ${missingFields.join(', ')}`;
     
     // Navigate to the first tab with an error
-    if (!product.value.sku || !product.value.name || !product.value.category || !product.value.collectionCode || !product.value.material) {
+    if (!product.value.name || !product.value.category || !product.value.collectionCode || !product.value.material) {
       activeTab.value = 'basic';
-    } else if (product.value.featureCodes.length === 0) {
+    } else if (product.value.featureCodes && product.value.featureCodes.length === 0) {
       activeTab.value = 'features';
     } else if (selectedFiles.value.length === 0) {
       activeTab.value = 'images';
@@ -146,11 +149,13 @@ const handlePublish = async () => {
 };
 
 const toggleFeature = (code: string) => {
-  const index = product.value.featureCodes.indexOf(code);
-  if (index === -1) {
-    product.value.featureCodes.push(code);
-  } else {
-    product.value.featureCodes.splice(index, 1);
+  if (product.value.featureCodes) {
+    const index = product.value.featureCodes.indexOf(code);
+    if (index === -1) {
+      product.value.featureCodes.push(code);
+    } else {
+      product.value.featureCodes.splice(index, 1);
+    }
   }
 };
 
@@ -159,7 +164,6 @@ const validateTab = (tabId: string): boolean => {
   if (tabId === 'basic') {
     const missing = [];
     if (!product.value.name) missing.push('Product Name');
-    if (!product.value.sku) missing.push('SKU');
     if (!product.value.category) missing.push('Category');
     if (!product.value.collectionCode) missing.push('Collection');
     if (!product.value.material) missing.push('Material');
@@ -169,7 +173,7 @@ const validateTab = (tabId: string): boolean => {
       return false;
     }
   } else if (tabId === 'features') {
-    if (product.value.featureCodes.length === 0) {
+    if (product.value.featureCodes && product.value.featureCodes.length === 0) {
       error.value = 'Please select at least one feature.';
       return false;
     }
@@ -199,9 +203,10 @@ const switchTab = (tabId: string) => {
   if (targetIndex > currentIndex) {
     // Going forward, validate all tabs between current and target
     for (let i = currentIndex; i < targetIndex; i++) {
-      if (!validateTab(tabs[i].id)) {
+        const tab = tabs[i];
+      if (tab && !validateTab(tab.id)) {
         // Stop at the first invalid tab
-        activeTab.value = tabs[i].id;
+        activeTab.value = tab.id;
         return;
       }
     }
@@ -288,7 +293,7 @@ const removeImage = (index: number) => {
             </div>
 
             <div class="form-section">
-              <label for="sku">SKU <span class="required">*</span></label>
+              <label for="sku">SKU</label>
               <input id="sku" v-model="product.sku" type="text" placeholder="e.g. SKU-12345" class="form-input" />
             </div>
 
@@ -363,7 +368,7 @@ const removeImage = (index: number) => {
                   <span class="material-icons-outlined">delete</span>
                 </button>
               </div>
-              <p v-if="product.productCare.length === 0" class="text-muted text-center p-4">No care instructions added yet.</p>
+              <p v-if="product.productCare && product.productCare.length === 0" class="text-muted text-center p-4">No care instructions added yet.</p>
             </div>
           </div>
         </div>
@@ -383,7 +388,7 @@ const removeImage = (index: number) => {
                   <span class="material-icons-outlined">delete</span>
                 </button>
               </div>
-              <p v-if="product.specifications.length === 0" class="text-muted text-center p-4">No specifications added yet.</p>
+              <p v-if="product.specifications && product.specifications.length === 0" class="text-muted text-center p-4">No specifications added yet.</p>
             </div>
           </div>
         </div>
@@ -397,7 +402,7 @@ const removeImage = (index: number) => {
                 v-for="f in features" 
                 :key="f.id" 
                 class="choice-label card" 
-                :class="{ selected: product.featureCodes.includes(f.id) }"
+                :class="{ selected: product.featureCodes && product.featureCodes.includes(f.id) }"
                 @click="toggleFeature(f.id)"
               >
                 {{ f.name }}
@@ -480,7 +485,7 @@ const removeImage = (index: number) => {
             </button>
             
             <template v-else>
-              <button class="btn btn-outline" @click="() => { product.status = 'Draft'; handlePublish(); }" :disabled="isSubmitting">
+              <button class="btn btn-outline" @click="() => { if (product) { product.status = 'Draft'; handlePublish(); } }" :disabled="isSubmitting">
                 Save as Draft
               </button>
               <button class="btn btn-primary" @click="handlePublish" :disabled="isSubmitting">
