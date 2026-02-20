@@ -491,6 +491,15 @@
         "tags": [
           "Product"
         ],
+        "parameters": [
+          {
+            "name": "skuId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -652,7 +661,7 @@
         }
       }
     },
-    "/seed/execute": {
+    "/api/Seed/execute": {
       "post": {
         "tags": [
           "Seed"
@@ -664,7 +673,7 @@
         }
       }
     },
-    "/seed/clear": {
+    "/api/Seed/clear": {
       "post": {
         "tags": [
           "Seed"

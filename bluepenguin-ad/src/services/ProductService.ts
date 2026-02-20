@@ -1,7 +1,7 @@
 import { api } from '../api/api';
 
 export interface Product {
-    sku: string;
+    sku?: string;
     name: string;
     description?: string;
     productCare?: string[];
@@ -60,10 +60,9 @@ export class ProductService {
         }
     }
 
-    static async create(product: Partial<Product>): Promise<void> {
+    static async create(product: Partial<Product>): Promise<any> {
         try {
-            await api.post('/api/Product/create', {
-                sku: product.sku,
+            return await api.post<any>('/api/Product/create', {
                 productName: product.name,
                 description: product.description,
                 productCareInstructions: product.productCare,
@@ -76,6 +75,8 @@ export class ProductService {
                 yearCode: product.yearCode,
                 sequenceCode: product.sequenceCode,
                 isActive: product.status === 'Active'
+            }, {
+                params: product.sku ? { skuId: product.sku } : {}
             });
         } catch (error) {
             console.error('Failed to create product:', error);

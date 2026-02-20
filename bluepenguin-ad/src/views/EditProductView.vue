@@ -26,7 +26,7 @@ const tabs = [
 ];
 
 // Form data
-const product = ref({
+const product = ref<Partial<Product>>({
   sku: '',
   name: '',
   description: '',
@@ -59,25 +59,29 @@ const newItemCare = ref('');
 const newItemSpec = ref('');
 
 const addCareItem = () => {
-  if (newItemCare.value.trim()) {
+  if (newItemCare.value.trim() && product.value.productCare) {
     product.value.productCare.push(newItemCare.value.trim());
     newItemCare.value = '';
   }
 };
 
 const removeCareItem = (index: number) => {
-  product.value.productCare.splice(index, 1);
+  if (product.value.productCare) {
+    product.value.productCare.splice(index, 1);
+  }
 };
 
 const addSpecItem = () => {
-  if (newItemSpec.value.trim()) {
+  if (newItemSpec.value.trim() && product.value.specifications) {
     product.value.specifications.push(newItemSpec.value.trim());
     newItemSpec.value = '';
   }
 };
 
 const removeSpecItem = (index: number) => {
-  product.value.specifications.splice(index, 1);
+  if (product.value.specifications) {
+    product.value.specifications.splice(index, 1);
+  }
 };
 
 const fetchData = async () => {
@@ -101,7 +105,7 @@ const fetchData = async () => {
     
     // Fill the form with existing product data
     product.value = {
-      sku: productData.sku,
+      sku: productData.sku || '',
       name: productData.name,
       description: productData.description || '',
       productCare: [...(productData.productCare || [])],
@@ -177,11 +181,13 @@ const handleUpdate = async () => {
 };
 
 const toggleFeature = (code: string) => {
-  const index = product.value.featureCodes.indexOf(code);
-  if (index === -1) {
-    product.value.featureCodes.push(code);
-  } else {
-    product.value.featureCodes.splice(index, 1);
+  if (product.value.featureCodes) {
+    const index = product.value.featureCodes.indexOf(code);
+    if (index === -1) {
+      product.value.featureCodes.push(code);
+    } else {
+      product.value.featureCodes.splice(index, 1);
+    }
   }
 };
 
@@ -362,7 +368,7 @@ const getImageUrl = (imageId: string) => {
                     <span class="material-icons-outlined">delete</span>
                   </button>
                 </div>
-                <p v-if="product.productCare.length === 0" class="text-muted text-center p-4">No care instructions added yet.</p>
+                <p v-if="!product.productCare || product.productCare.length === 0" class="text-muted text-center p-4">No care instructions added yet.</p>
               </div>
             </div>
           </div>
@@ -382,7 +388,7 @@ const getImageUrl = (imageId: string) => {
                     <span class="material-icons-outlined">delete</span>
                   </button>
                 </div>
-                <p v-if="product.specifications.length === 0" class="text-muted text-center p-4">No specifications added yet.</p>
+                <p v-if="!product.specifications || product.specifications.length === 0" class="text-muted text-center p-4">No specifications added yet.</p>
               </div>
             </div>
           </div>
@@ -391,7 +397,7 @@ const getImageUrl = (imageId: string) => {
           <div v-if="activeTab === 'features'" class="tab-pane">
             <div class="form-section">
               <label>Product Features (Read-only)</label>
-              <div v-if="product.featureCodes.length > 0" class="feature-grid mt-4">
+              <div v-if="product.featureCodes && product.featureCodes.length > 0" class="feature-grid mt-4">
                 <div 
                   v-for="code in product.featureCodes" 
                   :key="code" 

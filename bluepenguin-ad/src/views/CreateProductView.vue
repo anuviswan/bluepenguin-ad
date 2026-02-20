@@ -2,11 +2,12 @@
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import MainLayout from '../components/layout/MainLayout.vue';
-import { ProductService } from '../services/ProductService';
+import { ProductService, type Product } from '../services/ProductService';
 import { CategoryService } from '../services/CategoryService';
 import { CollectionService } from '../services/CollectionService';
 import { MaterialService } from '../services/MaterialService';
 import { FeatureService } from '../services/FeatureService';
+import { FileUploadService } from '../services/FileUploadService';
 
 const router = useRouter();
 
@@ -22,7 +23,7 @@ const tabs = [
 ];
 
 // Form data
-const product = ref({
+const product = ref<Partial<Product>>({
   sku: '',
   name: '',
   description: '',
@@ -46,6 +47,7 @@ const features = ref<{id: string, name: string}[]>([]);
 
 const isLoading = ref(false);
 const isSubmitting = ref(false);
+const isUploading = ref(false);
 const error = ref<string | null>(null);
 const successMessage = ref<string | null>(null);
 
@@ -54,25 +56,29 @@ const newItemCare = ref('');
 const newItemSpec = ref('');
 
 const addCareItem = () => {
-  if (newItemCare.value.trim()) {
+  if (newItemCare.value.trim() && product.value.productCare) {
     product.value.productCare.push(newItemCare.value.trim());
     newItemCare.value = '';
   }
 };
 
 const removeCareItem = (index: number) => {
-  product.value.productCare.splice(index, 1);
+  if (product.value.productCare) {
+    product.value.productCare.splice(index, 1);
+  }
 };
 
 const addSpecItem = () => {
-  if (newItemSpec.value.trim()) {
+  if (newItemSpec.value.trim() && product.value.specifications) {
     product.value.specifications.push(newItemSpec.value.trim());
     newItemSpec.value = '';
   }
 };
 
 const removeSpecItem = (index: number) => {
-  product.value.specifications.splice(index, 1);
+  if (product.value.specifications) {
+    product.value.specifications.splice(index, 1);
+  }
 };
 
 const fetchData = async () => {
@@ -105,9 +111,25 @@ const handleCancel = () => {
 };
 
 const handlePublish = async () => {
-  if (!product.value.sku || !product.value.name) {
-    error.value = 'SKU and Product Name are required';
-    activeTab.value = 'basic';
+  const missingFields = [];
+  if (!product.value.name) missingFields.push('Product Name');
+  if (!product.value.category) missingFields.push('Category');
+  if (!product.value.collectionCode) missingFields.push('Collection');
+  if (!product.value.material) missingFields.push('Material');
+  if (product.value.featureCodes && product.value.featureCodes.length === 0) missingFields.push('Features');
+  if (selectedFiles.value.length === 0) missingFields.push('Images');
+
+  if (missingFields.length > 0) {
+    error.value = `The following fields are required: ${missingFields.join(', ')}`;
+    
+    // Navigate to the first tab with an error
+    if (!product.value.name || !product.value.category || !product.value.collectionCode || !product.value.material) {
+      activeTab.value = 'basic';
+    } else if (product.value.featureCodes && product.value.featureCodes.length === 0) {
+      activeTab.value = 'features';
+    } else if (selectedFiles.value.length === 0) {
+      activeTab.value = 'images';
+    }
     return;
   }
 
@@ -115,7 +137,26 @@ const handlePublish = async () => {
   error.value = null;
   
   try {
-    await ProductService.create(product.value);
+    const result = await ProductService.create(product.value);
+    
+    // Determine SKU for image upload
+    const skuToUse = product.value.sku || (typeof result === 'string' ? result : (result?.sku || result?.skuId));
+    
+    if (skuToUse && selectedFiles.value.length > 0) {
+      isUploading.value = true;
+      successMessage.value = 'Product created! Uploading images...';
+      try {
+        await Promise.all(selectedFiles.value.map((file, index) => 
+          FileUploadService.uploadImage(skuToUse, file, index === 0)
+        ));
+      } catch (uploadErr) {
+        console.error('Some images failed to upload', uploadErr);
+        error.value = 'Product created, but some images failed to upload.';
+      } finally {
+        isUploading.value = false;
+      }
+    }
+
     successMessage.value = 'Product created successfully! Redirecting...';
     setTimeout(() => {
       router.push('/');
@@ -129,20 +170,69 @@ const handlePublish = async () => {
 };
 
 const toggleFeature = (code: string) => {
-  const index = product.value.featureCodes.indexOf(code);
-  if (index === -1) {
-    product.value.featureCodes.push(code);
-  } else {
-    product.value.featureCodes.splice(index, 1);
+  if (product.value.featureCodes) {
+    const index = product.value.featureCodes.indexOf(code);
+    if (index === -1) {
+      product.value.featureCodes.push(code);
+    } else {
+      product.value.featureCodes.splice(index, 1);
+    }
   }
 };
 
+const validateTab = (tabId: string): boolean => {
+  error.value = null;
+  if (tabId === 'basic') {
+    const missing = [];
+    if (!product.value.name) missing.push('Product Name');
+    if (!product.value.category) missing.push('Category');
+    if (!product.value.collectionCode) missing.push('Collection');
+    if (!product.value.material) missing.push('Material');
+    
+    if (missing.length > 0) {
+      error.value = `Please fill in mandatory fields: ${missing.join(', ')}`;
+      return false;
+    }
+  } else if (tabId === 'features') {
+    if (product.value.featureCodes && product.value.featureCodes.length === 0) {
+      error.value = 'Please select at least one feature.';
+      return false;
+    }
+  } else if (tabId === 'images') {
+    if (selectedFiles.value.length === 0) {
+      error.value = 'Please upload at least one image.';
+      return false;
+    }
+  }
+  return true;
+};
+
 const nextTab = () => {
+  if (!validateTab(activeTab.value)) return;
+  
   const currentIndex = tabs.findIndex(t => t.id === activeTab.value);
   if (currentIndex !== -1 && currentIndex < tabs.length - 1) {
     const next = tabs[currentIndex + 1];
     if (next) activeTab.value = next.id;
   }
+};
+
+const switchTab = (tabId: string) => {
+  const currentIndex = tabs.findIndex(t => t.id === activeTab.value);
+  const targetIndex = tabs.findIndex(t => t.id === tabId);
+  
+  if (targetIndex > currentIndex) {
+    // Going forward, validate all tabs between current and target
+    for (let i = currentIndex; i < targetIndex; i++) {
+        const tab = tabs[i];
+      if (tab && !validateTab(tab.id)) {
+        // Stop at the first invalid tab
+        activeTab.value = tab.id;
+        return;
+      }
+    }
+  }
+  activeTab.value = tabId;
 };
 
 const prevTab = () => {
@@ -207,7 +297,7 @@ const removeImage = (index: number) => {
           :key="tab.id"
           class="tab-btn"
           :class="{ active: activeTab === tab.id }"
-          @click="activeTab = tab.id"
+          @click="switchTab(tab.id)"
         >
           <span class="step-num">{{ index + 1 }}</span>
           {{ tab.label }}
@@ -219,7 +309,7 @@ const removeImage = (index: number) => {
         <div v-if="activeTab === 'basic'" class="tab-pane">
           <div class="form-grid">
             <div class="form-section">
-              <label for="name">Product Name</label>
+              <label for="name">Product Name <span class="required">*</span></label>
               <input id="name" v-model="product.name" type="text" placeholder="Product Name" class="form-input" />
             </div>
 
@@ -234,7 +324,7 @@ const removeImage = (index: number) => {
             </div>
 
             <div class="form-section">
-              <label for="category">Category</label>
+              <label for="category">Category <span class="required">*</span></label>
               <div class="select-wrapper">
                 <select id="category" v-model="product.category" class="form-input">
                   <option value="">Select Category</option>
@@ -245,7 +335,7 @@ const removeImage = (index: number) => {
             </div>
 
             <div class="form-section">
-              <label for="collection">Collection</label>
+              <label for="collection">Collection <span class="required">*</span></label>
               <div class="select-wrapper">
                 <select id="collection" v-model="product.collectionCode" class="form-input">
                   <option value="">Select Collection</option>
@@ -256,7 +346,7 @@ const removeImage = (index: number) => {
             </div>
 
             <div class="form-section">
-              <label for="material">Material</label>
+              <label for="material">Material <span class="required">*</span></label>
               <div class="select-wrapper">
                 <select id="material" v-model="product.material" class="form-input">
                   <option value="">Select Material</option>
@@ -299,7 +389,7 @@ const removeImage = (index: number) => {
                   <span class="material-icons-outlined">delete</span>
                 </button>
               </div>
-              <p v-if="product.productCare.length === 0" class="text-muted text-center p-4">No care instructions added yet.</p>
+              <p v-if="product.productCare && product.productCare.length === 0" class="text-muted text-center p-4">No care instructions added yet.</p>
             </div>
           </div>
         </div>
@@ -319,7 +409,7 @@ const removeImage = (index: number) => {
                   <span class="material-icons-outlined">delete</span>
                 </button>
               </div>
-              <p v-if="product.specifications.length === 0" class="text-muted text-center p-4">No specifications added yet.</p>
+              <p v-if="product.specifications && product.specifications.length === 0" class="text-muted text-center p-4">No specifications added yet.</p>
             </div>
           </div>
         </div>
@@ -327,13 +417,13 @@ const removeImage = (index: number) => {
         <!-- Features Tab -->
         <div v-if="activeTab === 'features'" class="tab-pane">
           <div class="form-section">
-            <label>Select Features</label>
+            <label>Select Features <span class="required">*</span></label>
             <div class="feature-grid mt-4">
               <div 
                 v-for="f in features" 
                 :key="f.id" 
                 class="choice-label card" 
-                :class="{ selected: product.featureCodes.includes(f.id) }"
+                :class="{ selected: product.featureCodes && product.featureCodes.includes(f.id) }"
                 @click="toggleFeature(f.id)"
               >
                 {{ f.name }}
@@ -355,7 +445,7 @@ const removeImage = (index: number) => {
           
           <div class="upload-area" @click="triggerBrowse">
             <span class="material-icons-outlined upload-icon">cloud_upload</span>
-            <p>Drag & drop images here, or <span class="browse-link">Browse</span></p>
+            <p>Drag & drop images here, or <span class="browse-link">Browse</span> <span class="required">*</span></p>
             <p class="upload-hint">Recommended size: 800x800px</p>
           </div>
 
@@ -416,11 +506,11 @@ const removeImage = (index: number) => {
             </button>
             
             <template v-else>
-              <button class="btn btn-outline" @click="() => { product.status = 'Draft'; handlePublish(); }" :disabled="isSubmitting">
+              <button class="btn btn-outline" @click="() => { if (product) { product.status = 'Draft'; handlePublish(); } }" :disabled="isSubmitting">
                 Save as Draft
               </button>
-              <button class="btn btn-primary" @click="handlePublish" :disabled="isSubmitting">
-                {{ isSubmitting ? 'Publishing...' : 'Publish Product' }}
+              <button class="btn btn-primary" @click="handlePublish" :disabled="isSubmitting || isUploading">
+                {{ isSubmitting ? 'Publishing...' : (isUploading ? 'Uploading Images...' : 'Publish Product') }}
               </button>
             </template>
           </div>
@@ -535,6 +625,13 @@ const removeImage = (index: number) => {
   font-weight: 500;
   font-size: 14px;
   color: var(--text-main);
+  display: flex;
+  align-items: center;
+}
+
+.required {
+  color: var(--danger-color);
+  margin-left: 4px;
 }
 
 .form-input {
