@@ -119,7 +119,7 @@ const goBack = () => {
             <span class="material-icons-outlined">arrow_back</span>
           </button>
           <h2>{{ product?.name }}</h2>
-          <span v-if="product" :class="['badge', product.status === 'Active' ? 'badge-success' : 'badge-warning']" style="height: fit-content; margin-top: 4px;">
+          <span v-if="product" :class="['badge', product.status === 'In Stock' ? 'badge-success' : 'badge-danger']" style="height: fit-content; margin-top: 4px;">
             <span class="dot"></span>
             {{ product.status }}
           </span>

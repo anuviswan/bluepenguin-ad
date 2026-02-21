@@ -369,7 +369,7 @@ const getImageUrl = (imageId: string) => {
               <div class="form-section">
                 <label>Status (Read-only)</label>
                 <div class="mt-2">
-                  <span :class="['badge', product.status === 'Active' ? 'badge-success' : 'badge-warning']">
+                  <span :class="['badge', product.status === 'In Stock' ? 'badge-success' : 'badge-danger']">
                     {{ product.status }}
                   </span>
                 </div>

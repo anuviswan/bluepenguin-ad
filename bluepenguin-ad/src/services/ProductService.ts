@@ -48,7 +48,7 @@ export class ProductService {
                     collectionCode: item.collectionCode || '-',
                     yearCode: item.yearCode || 0,
                     sequenceCode: item.sequenceCode || extractedSeq,
-                    status: item.isActive === false ? 'Draft' : 'Active',
+                    status: (item.stock || 0) > 0 ? 'In Stock' : 'Out of Stock',
                     stock: item.stock || 0
                 };
             });
@@ -74,7 +74,7 @@ export class ProductService {
                 collectionCode: product.collectionCode,
                 yearCode: product.yearCode,
                 sequenceCode: product.sequenceCode,
-                isActive: product.status === 'Active'
+                stock: product.stock || 0
             }, {
                 params: product.sku ? { skuId: product.sku } : {}
             });
@@ -110,7 +110,7 @@ export class ProductService {
                 collectionCode: item.collectionCode || item.collection || '-',
                 yearCode: item.yearCode || 0,
                 sequenceCode: item.sequenceCode || extractedSeq,
-                status: item.isActive === false ? 'Draft' : 'Active',
+                status: (item.stock || 0) > 0 ? 'In Stock' : 'Out of Stock',
                 stock: item.stock || 0
             };
         } catch (error) {

@@ -12,7 +12,7 @@ const totalCount = ref(0);
 const categories = ref<{id: string, name: string}[]>([]);
 const collections = ref<{id: string, name: string}[]>([]);
 const materials = ref<{id: string, name: string}[]>([]);
-const statuses = ref<string[]>(['Status', 'Active', 'Out of Stock', 'Draft', 'Archived']);
+const statuses = ref<string[]>(['Status', 'In Stock', 'Out of Stock']);
 const productThumbnails = ref<Record<string, string | null>>({});
 
 const router = useRouter();
@@ -245,7 +245,7 @@ onMounted(() => {
             <td>{{ getMaterialName(product.material) }}</td>
             <td>₹{{ product.price }}</td>
             <td>
-              <span :class="['badge', product.status === 'Active' ? 'badge-success' : 'badge-warning']">
+              <span :class="['badge', product.status === 'In Stock' ? 'badge-success' : 'badge-danger']">
                 <span class="dot"></span>
                 {{ product.status }}
               </span>
