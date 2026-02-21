@@ -102,6 +102,7 @@ const fetchData = async () => {
     materials.value = matData;
     features.value = featData;
     existingImages.value = imagesData;
+    primaryImageId.value = await FileUploadService.getPrimaryImageIdForSku(skuId);
     
     // Fill the form with existing product data
     product.value = {
@@ -153,8 +154,8 @@ const handleUpdate = async () => {
     if (selectedFiles.value.length > 0) {
       isUploading.value = true;
       try {
-        await Promise.all(selectedFiles.value.map(file => 
-          FileUploadService.uploadImage(skuId, file, false)
+        await Promise.all(selectedFiles.value.map((file, index) => 
+          FileUploadService.uploadImage(skuId, file, index === primaryImageIndex.value)
         ));
         selectedFiles.value = [];
         imagePreviews.value = [];
@@ -212,6 +213,8 @@ const fileInput = ref<HTMLInputElement | null>(null);
 const imagePreviews = ref<string[]>([]);
 const selectedFiles = ref<File[]>([]);
 const existingImages = ref<string[]>([]);
+const primaryImageId = ref<string | null>(null);
+const primaryImageIndex = ref(-1); // -1 means none of the new images is selected as primary
 const isUploading = ref(false);
 
 const triggerBrowse = () => {
@@ -238,6 +241,27 @@ const handleFileChange = (event: Event) => {
 const removeImage = (index: number) => {
   imagePreviews.value.splice(index, 1);
   selectedFiles.value.splice(index, 1);
+  if (primaryImageIndex.value === index) {
+    primaryImageIndex.value = -1;
+  } else if (primaryImageIndex.value > index) {
+    primaryImageIndex.value--;
+  }
+};
+
+const setPrimaryImage = (index: number) => {
+  primaryImageIndex.value = index;
+  primaryImageId.value = null; // Unset existing primary if a new one is selected
+};
+
+const markExistingAsPrimary = async (imageId: string) => {
+  try {
+    await FileUploadService.markPrimaryImage(skuId, imageId);
+    primaryImageId.value = imageId;
+    primaryImageIndex.value = -1; // Unset new image primary if an existing one is selected
+    // Show success feedback if needed, but the UI updates automatically via reactivity
+  } catch (err) {
+    error.value = 'Failed to mark image as primary. Please try again.';
+  }
 };
 
 const removeExistingImage = async (imageId: string) => {
@@ -415,11 +439,21 @@ const getImageUrl = (imageId: string) => {
             <div class="images-section mb-6">
               <h4 class="mb-3">Existing Images</h4>
               <div v-if="existingImages.length > 0" class="previews-grid">
-                <div v-for="imageId in existingImages" :key="imageId" class="preview-item card">
-                  <img :src="getImageUrl(imageId)" alt="Product Image" />
-                  <button class="remove-btn" @click.stop="removeExistingImage(imageId)">
-                    <span class="material-icons-outlined">delete</span>
-                  </button>
+                <div v-for="imageId in existingImages" :key="imageId" class="image-card" :class="{ 'is-primary': primaryImageId === imageId }">
+                  <div class="image-container">
+                    <img :src="getImageUrl(imageId)" alt="Product Image" />
+                    <button class="small-remove-btn" @click.stop="removeExistingImage(imageId)" title="Delete image">
+                      <span class="material-icons-outlined">close</span>
+                    </button>
+                  </div>
+                  <div class="image-footer" @click="markExistingAsPrimary(imageId)">
+                    <div class="primary-label">
+                      <div class="radio-circle" :class="{ checked: primaryImageId === imageId }">
+                        <div v-if="primaryImageId === imageId" class="radio-inner"></div>
+                      </div>
+                      <span>{{ primaryImageId === imageId ? 'Primary' : 'Set as primary' }}</span>
+                    </div>
+                  </div>
                 </div>
               </div>
               <p v-else class="text-muted italic">No images currently uploaded for this product.</p>
@@ -444,11 +478,21 @@ const getImageUrl = (imageId: string) => {
               </div>
 
               <div v-if="imagePreviews.length > 0" class="previews-grid mt-6">
-                <div v-for="(src, index) in imagePreviews" :key="index" class="preview-item card">
-                  <img :src="src" alt="Preview" />
-                  <button class="remove-btn" @click.stop="removeImage(index)">
-                    <span class="material-icons-outlined">close</span>
-                  </button>
+                <div v-for="(src, index) in imagePreviews" :key="index" class="image-card" :class="{ 'is-primary': primaryImageIndex === index }">
+                  <div class="image-container">
+                    <img :src="src" alt="Preview" />
+                    <button class="small-remove-btn" @click.stop="removeImage(index)" title="Delete image">
+                      <span class="material-icons-outlined">close</span>
+                    </button>
+                  </div>
+                  <div class="image-footer" @click="setPrimaryImage(index)">
+                    <label class="primary-label">
+                      <div class="radio-circle" :class="{ checked: primaryImageIndex === index }">
+                        <div v-if="primaryImageIndex === index" class="radio-inner"></div>
+                      </div>
+                      <span>{{ primaryImageIndex === index ? 'Primary' : 'Set as primary' }}</span>
+                    </label>
+                  </div>
                 </div>
               </div>
             </div>
@@ -759,34 +803,109 @@ textarea.form-input {
   gap: 16px;
 }
 
-.preview-item {
+.image-card {
   position: relative;
-  aspect-ratio: 1;
-  padding: 4px;
+  background: white;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
 }
 
-.preview-item img {
+.image-card.is-primary {
+  border-color: var(--primary-color);
+  box-shadow: 0 4px 12px rgba(43, 87, 154, 0.15);
+}
+
+.image-container {
+  position: relative;
+  aspect-ratio: 1;
+  width: 100%;
+}
+
+.image-container img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  border-radius: var(--radius-sm);
 }
 
-.remove-btn {
+.small-remove-btn {
   position: absolute;
-  top: -8px;
-  right: -8px;
-  width: 24px;
-  height: 24px;
-  background-color: var(--danger-color);
-  color: white;
-  border: none;
+  top: 4px;
+  right: 4px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
+  background: rgba(0,0,0,0.5);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.image-card:hover .small-remove-btn {
+  opacity: 1;
+}
+
+.small-remove-btn .material-icons-outlined {
+  font-size: 14px;
+}
+
+.image-footer {
+  padding: 8px;
+  border-top: 1px solid var(--border-color);
+  background: #fafafa;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.image-card.is-primary .image-footer {
+  background: var(--primary-light);
+  border-top-color: var(--primary-color);
+}
+
+.primary-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.image-card.is-primary .primary-label {
+  color: var(--primary-color);
+}
+
+.radio-circle {
+  width: 14px;
+  height: 14px;
+  border: 1.5px solid #ccc;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+}
+
+.radio-circle.checked {
+  border-color: var(--primary-color);
+}
+
+.radio-inner {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--primary-color);
 }
 
 .radio-label {

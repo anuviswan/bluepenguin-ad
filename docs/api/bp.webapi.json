@@ -446,6 +446,34 @@
         }
       }
     },
+    "/api/FileUpload/markprimaryimage": {
+      "post": {
+        "tags": [
+          "FileUpload"
+        ],
+        "parameters": [
+          {
+            "name": "skuId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "imageId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/FileUpload/deleteproductimage": {
       "delete": {
         "tags": [
