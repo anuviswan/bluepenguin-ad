@@ -19,6 +19,7 @@ const categories = ref<Category[]>([]);
 const collections = ref<Collection[]>([]);
 const materials = ref<Material[]>([]);
 const productImages = ref<string[]>([]);
+const primaryImageId = ref<string | null>(null);
 const isLoading = ref(true);
 const error = ref<string | null>(null);
 
@@ -44,7 +45,8 @@ const fetchProductAndMetadata = async () => {
       CategoryService.getAll().then(res => categories.value = res).catch(e => console.warn('Categories fetch failed', e)),
       CollectionService.getAll().then(res => collections.value = res).catch(e => console.warn('Collections fetch failed', e)),
       MaterialService.getAll().then(res => materials.value = res).catch(e => console.warn('Materials fetch failed', e)),
-      FileUploadService.getAllImagesForSku(currentSku).then(res => productImages.value = res).catch(e => console.warn('Images fetch failed', e))
+      FileUploadService.getAllImagesForSku(currentSku).then(res => productImages.value = res).catch(e => console.warn('Images fetch failed', e)),
+      FileUploadService.getPrimaryImageIdForSku(currentSku).then(res => primaryImageId.value = res).catch(e => console.warn('Primary image fetch failed', e))
     ]);
   } catch (err) {
     console.error('ProductDetailsView: Fatal fetch error:', err);
@@ -148,8 +150,12 @@ const goBack = () => {
             <div v-if="productImages.length > 0" class="card p-6">
               <h3 class="section-title">Product Images</h3>
               <div class="image-gallery mt-4">
-                <div v-for="imageId in productImages" :key="imageId" class="gallery-item">
+                <div v-for="imageId in productImages" :key="imageId" class="gallery-item" :class="{ 'is-primary': imageId === primaryImageId }">
                   <img :src="getImageUrl(imageId)" alt="Product" />
+                  <div v-if="imageId === primaryImageId" class="primary-overlay-tag">
+                    <span class="material-icons-outlined">stars</span>
+                    Primary
+                  </div>
                 </div>
               </div>
             </div>
@@ -419,11 +425,39 @@ const goBack = () => {
   border-radius: var(--radius-sm);
   overflow: hidden;
   border: 1px solid var(--border-color);
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.gallery-item.is-primary {
+  border-color: var(--primary-color);
+  box-shadow: 0 4px 12px rgba(43, 87, 154, 0.2);
 }
 
 .gallery-item img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.primary-overlay-tag {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  background-color: var(--primary-color);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  z-index: 10;
+}
+
+.primary-overlay-tag .material-icons-outlined {
+  font-size: 14px;
 }
 </style>

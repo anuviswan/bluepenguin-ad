@@ -97,4 +97,15 @@ export class FileUploadService {
             throw error;
         }
     }
+
+    static async markPrimaryImage(skuId: string, imageId: string): Promise<void> {
+        try {
+            await api.post('/api/FileUpload/markprimaryimage', null, {
+                params: { skuId, imageId }
+            });
+        } catch (error) {
+            console.error(`Failed to mark image ${imageId} as primary for SKU ${skuId}:`, error);
+            throw error;
+        }
+    }
 }
