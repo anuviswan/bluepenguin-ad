@@ -34,7 +34,7 @@ const product = ref<Partial<Product>>({
   material: '',
   featureCodes: [] as string[],
   price: 0,
-  status: 'Active',
+  stock: 0,
   yearCode: new Date().getFullYear(),
   sequenceCode: 1
 });
@@ -366,21 +366,6 @@ const setPrimaryImage = (index: number) => {
               </div>
             </div>
 
-            <div class="form-section">
-              <label>Status</label>
-              <div class="status-options flex gap-6 mt-2">
-                <label class="radio-label">
-                  <input type="radio" value="Active" v-model="product.status" />
-                  <span class="radio-custom"></span>
-                  Active
-                </label>
-                <label class="radio-label">
-                  <input type="radio" value="Draft" v-model="product.status" />
-                  <span class="radio-custom"></span>
-                  Draft
-                </label>
-              </div>
-            </div>
           </div>
         </div>
 
@@ -488,6 +473,11 @@ const setPrimaryImage = (index: number) => {
             </div>
             
             <div class="form-section">
+              <label for="stock">Stock Quantity</label>
+              <input id="stock" v-model.number="product.stock" type="number" placeholder="0" class="form-input" />
+            </div>
+
+            <div class="form-section">
               <label for="year">Year Code</label>
               <input id="year" v-model.number="product.yearCode" type="number" class="form-input" />
             </div>
@@ -526,9 +516,6 @@ const setPrimaryImage = (index: number) => {
             </button>
             
             <template v-else>
-              <button class="btn btn-outline" @click="() => { if (product) { product.status = 'Draft'; handlePublish(); } }" :disabled="isSubmitting">
-                Save as Draft
-              </button>
               <button class="btn btn-primary" @click="handlePublish" :disabled="isSubmitting || isUploading">
                 {{ isSubmitting ? 'Publishing...' : (isUploading ? 'Uploading Images...' : 'Publish Product') }}
               </button>
