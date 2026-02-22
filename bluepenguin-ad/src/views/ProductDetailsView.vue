@@ -94,6 +94,21 @@ const productFeatures = computed(() => {
   }));
 });
 
+const isDiscountActive = computed(() => {
+  if (!product.value || !product.value.discountPrice) return false;
+  if (!product.value.discountExpiryDate) return true;
+  return new Date(product.value.discountExpiryDate) > new Date();
+});
+
+const formattedExpiryDate = computed(() => {
+  if (!product.value?.discountExpiryDate) return '';
+  return new Date(product.value.discountExpiryDate).toLocaleDateString('en-IN', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric'
+  });
+});
+
 onMounted(() => {
   fetchProductAndMetadata();
 });
@@ -169,7 +184,14 @@ const goBack = () => {
                 </div>
                 <div class="info-item">
                   <label>Price</label>
-                  <span class="price-text">₹{{ product.price.toLocaleString() }}</span>
+                  <div class="flex align-center gap-3">
+                    <span :class="['price-text', { 'strikethrough': isDiscountActive }]">₹{{ product.price.toLocaleString() }}</span>
+                    <span v-if="isDiscountActive" class="discount-price-text">₹{{ product.discountPrice?.toLocaleString() }}</span>
+                  </div>
+                  <div v-if="isDiscountActive && product.discountExpiryDate" class="discount-expiry">
+                    <span class="material-icons-outlined">timer</span>
+                    Offer valid till {{ formattedExpiryDate }}
+                  </div>
                 </div>
                 <div class="info-item">
                   <label>Category</label>
@@ -328,6 +350,33 @@ const goBack = () => {
   font-weight: 600;
   color: var(--primary-color);
   font-size: 18px !important;
+}
+
+.price-text.strikethrough {
+  text-decoration: line-through;
+  color: var(--text-muted);
+  font-size: 14px !important;
+  font-weight: 400;
+}
+
+.discount-price-text {
+  font-weight: 700;
+  color: var(--danger-color);
+  font-size: 22px;
+}
+
+.discount-expiry {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--danger-color);
+  font-weight: 500;
+  margin-top: 4px;
+}
+
+.discount-expiry .material-icons-outlined {
+  font-size: 14px;
 }
 
 .description-text {

@@ -34,6 +34,8 @@ const product = ref<Partial<Product>>({
   material: '',
   featureCodes: [] as string[],
   price: 0,
+  discountPrice: undefined,
+  discountExpiryDate: '',
   stock: 0,
   yearCode: new Date().getFullYear(),
   sequenceCode: 1
@@ -468,8 +470,18 @@ const setPrimaryImage = (index: number) => {
         <div v-if="activeTab === 'pricing'" class="tab-pane">
           <div class="form-grid">
             <div class="form-section">
-              <label for="price">Price (₹)</label>
+              <label for="price">Regular Price (₹)</label>
               <input id="price" v-model.number="product.price" type="number" placeholder="0.00" class="form-input" />
+            </div>
+
+            <div class="form-section">
+              <label for="discountPrice">Discount Price (₹)</label>
+              <input id="discountPrice" v-model.number="product.discountPrice" type="number" placeholder="0.00" class="form-input" />
+            </div>
+
+            <div class="form-section">
+              <label for="discountExpiry">Discount Expiry Date</label>
+              <input id="discountExpiry" v-model="product.discountExpiryDate" type="date" class="form-input" />
             </div>
             
             <div class="form-section">

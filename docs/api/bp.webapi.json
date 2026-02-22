@@ -809,6 +809,16 @@
             "type": "number",
             "format": "double"
           },
+          "discountPrice": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "discountExpiryDate": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
           "categoryCode": {
             "type": "string",
             "nullable": true
@@ -912,6 +922,16 @@
           "price": {
             "type": "number",
             "format": "double",
+            "nullable": true
+          },
+          "discountPrice": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "discountExpiryDate": {
+            "type": "string",
+            "format": "date-time",
             "nullable": true
           },
           "stock": {

@@ -7,6 +7,8 @@ export interface Product {
     productCare?: string[];
     specifications?: string[];
     price: number;
+    discountPrice?: number;
+    discountExpiryDate?: string;
     category: string;
     material: string;
     featureCodes: string[];
@@ -42,6 +44,8 @@ export class ProductService {
                     productCare: item.productCare || [],
                     specifications: item.specifications || [],
                     price: item.price || 0,
+                    discountPrice: item.discountPrice,
+                    discountExpiryDate: item.discountExpiryDate,
                     category: item.categoryCode || '-',
                     material: item.materialCode || item.material || item.productMaterial || '-',
                     featureCodes: item.featureCodes || [],
@@ -68,6 +72,8 @@ export class ProductService {
                 productCareInstructions: product.productCare,
                 specifications: product.specifications,
                 price: product.price,
+                discountPrice: product.discountPrice,
+                discountExpiryDate: product.discountExpiryDate,
                 categoryCode: product.category,
                 material: product.material,
                 featureCodes: product.featureCodes,
@@ -104,6 +110,8 @@ export class ProductService {
                 productCare: item.productCareInstructions || item.productCare || [],
                 specifications: item.specifications || [],
                 price: item.price || 0,
+                discountPrice: item.discountPrice,
+                discountExpiryDate: item.discountExpiryDate,
                 category: item.categoryCode || item.category || '-',
                 material: item.materialCode || item.material || item.productMaterial || '-',
                 featureCodes: item.featureCodes || [],
@@ -128,6 +136,8 @@ export class ProductService {
                 specifications: product.specifications,
                 productCareInstructions: product.productCare,
                 price: product.price,
+                discountPrice: product.discountPrice,
+                discountExpiryDate: product.discountExpiryDate,
                 stock: product.stock,
             });
         } catch (error) {
