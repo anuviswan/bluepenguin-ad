@@ -37,6 +37,8 @@ const product = ref<Partial<Product>>({
   material: '',
   featureCodes: [] as string[],
   price: 0,
+  discountPrice: undefined,
+  discountExpiryDate: '',
   status: 'Active',
   yearCode: 0,
   sequenceCode: 0,
@@ -116,6 +118,8 @@ const fetchData = async () => {
       material: productData.material,
       featureCodes: [...(productData.featureCodes || [])],
       price: productData.price,
+      discountPrice: productData.discountPrice,
+      discountExpiryDate: productData.discountExpiryDate ? productData.discountExpiryDate.split('T')[0] : '',
       status: productData.status,
       yearCode: productData.yearCode,
       sequenceCode: productData.sequenceCode,
@@ -501,15 +505,25 @@ const getImageUrl = (imageId: string) => {
           <!-- Pricing Tab -->
           <div v-if="activeTab === 'pricing'" class="tab-pane">
             <div class="form-grid">
-              <div class="form-section">
-                <label for="price">Price (₹)</label>
-                <input id="price" v-model.number="product.price" type="number" placeholder="0.00" class="form-input" />
-              </div>
+            <div class="form-section">
+              <label for="price">Regular Price (₹)</label>
+              <input id="price" v-model.number="product.price" type="number" placeholder="0.00" class="form-input" />
+            </div>
 
-              <div class="form-section">
-                <label for="stock">Stock Quantity</label>
-                <input id="stock" v-model.number="product.stock" type="number" placeholder="0" class="form-input" />
-              </div>
+            <div class="form-section">
+              <label for="discountPrice">Discount Price (₹)</label>
+              <input id="discountPrice" v-model.number="product.discountPrice" type="number" placeholder="0.00" class="form-input" />
+            </div>
+
+            <div class="form-section">
+              <label for="discountExpiry">Discount Expiry Date</label>
+              <input id="discountExpiry" v-model="product.discountExpiryDate" type="date" class="form-input" />
+            </div>
+
+            <div class="form-section">
+              <label for="stock">Stock Quantity</label>
+              <input id="stock" v-model.number="product.stock" type="number" placeholder="0" class="form-input" />
+            </div>
               
               <div class="form-section">
                 <label for="year">Year Code (Read-only)</label>

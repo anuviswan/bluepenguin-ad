@@ -149,6 +149,12 @@ const getMaterialName = (code: string) => {
   return item ? `${item.name} (${code})` : code;
 };
 
+const isDiscountActive = (product: Product) => {
+  if (!product.discountPrice) return false;
+  if (!product.discountExpiryDate) return true;
+  return new Date(product.discountExpiryDate) > new Date();
+};
+
 onMounted(() => {
   fetchData();
 });
@@ -243,7 +249,12 @@ onMounted(() => {
             <td>{{ getCategoryName(product.category) }}</td>
             <td>{{ getCollectionName(product.collectionCode) }}</td>
             <td>{{ getMaterialName(product.material) }}</td>
-            <td>₹{{ product.price }}</td>
+            <td>
+              <div class="price-cell">
+                <span :class="['price-val', { 'strikethrough': isDiscountActive(product) }]">₹{{ product.price }}</span>
+                <span v-if="isDiscountActive(product)" class="discount-val">₹{{ product.discountPrice }}</span>
+              </div>
+            </td>
             <td>
               <span :class="['badge', product.status === 'In Stock' ? 'badge-success' : 'badge-danger']">
                 <span class="dot"></span>
@@ -447,6 +458,23 @@ td {
   text-align: right;
   color: var(--text-muted);
   cursor: pointer;
+}
+
+.price-cell {
+  display: flex;
+  flex-direction: column;
+}
+
+.price-val.strikethrough {
+  text-decoration: line-through;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.discount-val {
+  color: var(--danger-color);
+  font-weight: 600;
+  font-size: 14px;
 }
 
 .pagination {
