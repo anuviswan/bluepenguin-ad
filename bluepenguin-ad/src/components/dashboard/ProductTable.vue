@@ -6,6 +6,7 @@ import { CategoryService } from '../../services/CategoryService';
 import { CollectionService } from '../../services/CollectionService';
 import { MaterialService } from '../../services/MaterialService';
 import { FileUploadService } from '../../services/FileUploadService';
+import { ArtisanFavService } from '../../services/ArtisanFavService';
 
 const products = ref<Product[]>([]);
 const totalCount = ref(0);
@@ -14,6 +15,7 @@ const collections = ref<{id: string, name: string}[]>([]);
 const materials = ref<{id: string, name: string}[]>([]);
 const statuses = ref<string[]>(['Status', 'In Stock', 'Out of Stock']);
 const productThumbnails = ref<Record<string, string | null>>({});
+const artisanFavs = ref<string[]>([]);
 
 const router = useRouter();
 
@@ -111,11 +113,12 @@ const fetchData = async () => {
   isLoading.value = true;
   error.value = null;
   try {
-    const [productsResult, categoriesData, collectionsData, materialsData] = await Promise.all([
+    const [productsResult, categoriesData, collectionsData, materialsData, favsData] = await Promise.all([
       ProductService.getAll(currentPage.value, pageSize.value),
       CategoryService.getAll(),
       CollectionService.getAll(),
-      MaterialService.getAll()
+      MaterialService.getAll(),
+      ArtisanFavService.getAll()
     ]);
 
     products.value = productsResult.products;
@@ -123,6 +126,7 @@ const fetchData = async () => {
     categories.value = categoriesData.map(c => ({ id: c.id, name: c.name }));
     collections.value = collectionsData.map(c => ({ id: c.id, name: c.name }));
     materials.value = materialsData.map(m => ({ id: m.id, name: m.name }));
+    artisanFavs.value = favsData.map(f => f.sku);
     
     // Load thumbnails
     loadThumbnails(productsResult.products);
@@ -245,7 +249,14 @@ onMounted(() => {
               </div>
             </td>
             <td>{{ product.sku }}</td>
-            <td class="product-name">{{ product.name }}</td>
+            <td>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span class="product-name">{{ product.name }}</span>
+                <span v-if="artisanFavs.includes(product.sku!)" class="artisan-badge" title="Artisan's Favorite">
+                  <span class="material-icons-outlined">star</span>
+                </span>
+              </div>
+            </td>
             <td>{{ getCategoryName(product.category) }}</td>
             <td>{{ getCollectionName(product.collectionCode) }}</td>
             <td>{{ getMaterialName(product.material) }}</td>
@@ -438,6 +449,20 @@ td {
 
 .clickable-row:hover {
   background-color: #f8f9fa;
+}
+
+.product-name {
+  font-weight: 500;
+}
+
+.artisan-badge {
+  color: #fbbf24; /* Gold color */
+  display: inline-flex;
+  align-items: center;
+}
+
+.artisan-badge .material-icons-outlined {
+  font-size: 16px;
 }
 
 .badge {

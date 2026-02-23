@@ -5,6 +5,71 @@
     "version": "1.0"
   },
   "paths": {
+    "/api/ArtisanFav/getall": {
+      "get": {
+        "tags": [
+          "ArtisanFav"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/ArtisanFav/create": {
+      "post": {
+        "tags": [
+          "ArtisanFav"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ArtisanFavRequest"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ArtisanFavRequest"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/ArtisanFavRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/ArtisanFav/delete/{sku}": {
+      "delete": {
+        "tags": [
+          "ArtisanFav"
+        ],
+        "parameters": [
+          {
+            "name": "sku",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/login": {
       "post": {
         "tags": [
@@ -712,6 +777,75 @@
           }
         }
       }
+    },
+    "/api/Showcase/GetTopCategories": {
+      "get": {
+        "tags": [
+          "Showcase"
+        ],
+        "parameters": [
+          {
+            "name": "count",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 4
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Showcase/GetTopDiscounts": {
+      "get": {
+        "tags": [
+          "Showcase"
+        ],
+        "parameters": [
+          {
+            "name": "count",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 4
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Showcase/GetTopCollections": {
+      "get": {
+        "tags": [
+          "Showcase"
+        ],
+        "parameters": [
+          {
+            "name": "count",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "default": 4
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -742,6 +876,16 @@
             "nullable": true
           },
           "symbolic": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "ArtisanFavRequest": {
+        "type": "object",
+        "properties": {
+          "sku": {
             "type": "string",
             "nullable": true
           }
