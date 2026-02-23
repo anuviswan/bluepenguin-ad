@@ -8,6 +8,7 @@ import { CollectionService } from '../services/CollectionService';
 import { MaterialService } from '../services/MaterialService';
 import { FeatureService } from '../services/FeatureService';
 import { FileUploadService } from '../services/FileUploadService';
+import { ArtisanFavService } from '../services/ArtisanFavService';
 
 const router = useRouter();
 
@@ -38,7 +39,8 @@ const product = ref<Partial<Product>>({
   discountExpiryDate: '',
   stock: 0,
   yearCode: new Date().getFullYear(),
-  sequenceCode: 1
+  sequenceCode: 1,
+  isArtisanFav: false
 });
 
 // Dropdown options
@@ -159,12 +161,27 @@ const handlePublish = async () => {
       }
     }
 
+    if (product.value.isArtisanFav && skuToUse) {
+      try {
+        await ArtisanFavService.create(skuToUse);
+      } catch (favErr: any) {
+        console.error('Failed to mark as Artisan Fav', favErr);
+        // Extract specific error message
+        const backendMessage = favErr.message || 'Unknown error marking as artisan fav';
+        error.value = `Product created, but failed to mark as Artisan Favorite: ${backendMessage}`;
+        // We do not redirect if setting artisan fav fails so user can see the error
+        isSubmitting.value = false;
+        return;
+      }
+    }
+
     successMessage.value = 'Product created successfully! Redirecting...';
     setTimeout(() => {
       router.push('/');
     }, 2000);
-  } catch (err) {
-    error.value = 'Failed to create product. Please check your data and try again.';
+  } catch (err: any) {
+    const backendMessage = err.message || 'Unknown error';
+    error.value = `Failed to create product: ${backendMessage}`;
     console.error(err);
   } finally {
     isSubmitting.value = false;
@@ -365,6 +382,22 @@ const setPrimaryImage = (index: number) => {
                   <option v-for="m in materials" :key="m.id" :value="m.id">{{ m.name }}</option>
                 </select>
                 <span class="material-icons-outlined">expand_more</span>
+              </div>
+            </div>
+
+            <div class="form-section full-width">
+              <div class="toggle-container card p-4 flex justify-between align-center">
+                <div class="toggle-info">
+                  <label class="toggle-label flex align-center gap-2 mb-1">
+                    <span class="material-icons-outlined text-warning">star</span>
+                    Artisan's Favorite
+                  </label>
+                  <p class="text-muted text-sm m-0">Mark this product to be featured prominently as an Artisan's Favorite.</p>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" v-model="product.isArtisanFav">
+                  <span class="slider round"></span>
+                </label>
               </div>
             </div>
 
@@ -744,6 +777,86 @@ textarea.form-input {
   font-size: 12px;
   color: var(--text-muted);
   margin-top: 8px;
+}
+
+.text-warning {
+  color: #f59e0b;
+}
+
+.text-sm {
+  font-size: 13px;
+}
+
+.m-0 {
+  margin: 0;
+}
+
+.toggle-container {
+  border-left: 4px solid #f59e0b;
+  background: linear-gradient(to right, #fffbeb, white);
+}
+
+.toggle-label {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-main);
+  margin-bottom: 4px;
+}
+
+/* Toggle Switch Styles */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 50px;
+  height: 28px;
+}
+
+.switch input { 
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  transition: .4s;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 20px;
+  width: 20px;
+  left: 4px;
+  bottom: 4px;
+  background-color: white;
+  transition: .4s;
+}
+
+input:checked + .slider {
+  background-color: #f59e0b;
+}
+
+input:focus + .slider {
+  box-shadow: 0 0 1px #f59e0b;
+}
+
+input:checked + .slider:before {
+  transform: translateX(22px);
+}
+
+.slider.round {
+  border-radius: 34px;
+}
+
+.slider.round:before {
+  border-radius: 50%;
 }
 
 .hidden-input {

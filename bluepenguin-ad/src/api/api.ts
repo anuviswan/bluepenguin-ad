@@ -34,12 +34,40 @@ export async function request<T>(endpoint: string, options: RequestOptions = {})
     });
 
     if (!response.ok) {
-        let errorMessage = `API Error: ${response.status} ${response.statusText}`;
+        let errorMessage = `API Error: ${response.status}`;
         try {
-            const errorData = await response.json();
-            if (errorData.message) errorMessage = errorData.message;
+            const text = await response.text();
+            if (text) {
+                try {
+                    const errorData = JSON.parse(text);
+                    if (typeof errorData === 'string') {
+                        errorMessage = errorData;
+                    } else if (errorData.message) {
+                        errorMessage = errorData.message;
+                    } else if (errorData.detail) {
+                        errorMessage = errorData.detail;
+                    } else if (errorData.title) {
+                        errorMessage = errorData.title;
+                    } else if (errorData.errors) {
+                        const firstKey = Object.keys(errorData.errors)[0];
+                        if (firstKey && Array.isArray(errorData.errors[firstKey])) {
+                            errorMessage = errorData.errors[firstKey][0];
+                        }
+                    }
+                } catch {
+                    // Not a JSON object, might be plain text error
+                    if (!text.toLowerCase().startsWith('<!doctype html>')) {
+                        errorMessage = text;
+                    }
+                }
+            } else if (response.statusText) {
+                errorMessage += ` ${response.statusText}`;
+            }
         } catch {
-            // Not JSON error, use default
+            // failed to read body
+            if (response.statusText) {
+                errorMessage += ` ${response.statusText}`;
+            }
         }
         throw new Error(errorMessage);
     }

@@ -17,6 +17,7 @@ export interface Product {
     sequenceCode: number;
     status: string;
     stock?: number;
+    isArtisanFav?: boolean;
 }
 
 export class ProductService {
@@ -72,8 +73,8 @@ export class ProductService {
                 productCareInstructions: product.productCare,
                 specifications: product.specifications,
                 price: product.price,
-                discountPrice: product.discountPrice,
-                discountExpiryDate: product.discountExpiryDate,
+                discountPrice: product.discountPrice ? Number(product.discountPrice) : null,
+                discountExpiryDate: product.discountExpiryDate ? product.discountExpiryDate : null,
                 categoryCode: product.category,
                 material: product.material,
                 featureCodes: product.featureCodes,
@@ -136,8 +137,8 @@ export class ProductService {
                 specifications: product.specifications,
                 productCareInstructions: product.productCare,
                 price: product.price,
-                discountPrice: product.discountPrice,
-                discountExpiryDate: product.discountExpiryDate,
+                discountPrice: product.discountPrice ? Number(product.discountPrice) : null,
+                discountExpiryDate: product.discountExpiryDate ? product.discountExpiryDate : null,
                 stock: product.stock,
             });
         } catch (error) {
