@@ -6,8 +6,13 @@ interface Category {
   isActive: boolean;
 }
 
-defineProps<{
+const props = defineProps<{
   category: Category;
+  isFeatured?: boolean;
+}>();
+
+const emit = defineEmits<{
+  (e: 'toggle-featured', category: Category): void
 }>();
 </script>
 
@@ -27,13 +32,16 @@ defineProps<{
     </div>
 
     <div class="item-actions">
-      <button class="btn-icon edit" title="Edit">
-        <span class="material-icons-outlined">edit</span>
+      <button 
+        class="btn-icon star" 
+        :class="{ active: isFeatured }" 
+        @click="emit('toggle-featured', category)"
+        :title="isFeatured ? 'Remove as Featured' : 'Mark as Featured'"
+      >
+        <span class="material-icons-outlined">
+          {{ isFeatured ? 'star' : 'star_border' }}
+        </span>
       </button>
-      <button class="btn-icon delete" title="Delete">
-        <span class="material-icons-outlined">delete_outline</span>
-      </button>
-      <span class="material-icons-outlined more-icon">more_vert</span>
     </div>
   </div>
 </template>
@@ -102,26 +110,19 @@ defineProps<{
   cursor: pointer;
 }
 
-.btn-icon.edit {
-  color: var(--text-muted);
-}
-
-.btn-icon.edit:hover {
-  background-color: var(--bg-main);
-  color: var(--primary-color);
-}
-
-.btn-icon.delete {
-  color: var(--danger-color);
-}
-
-.btn-icon.delete:hover {
-  background-color: #fff5f5;
-  color: #c53030;
-}
-
-.more-icon {
+.btn-icon.star {
   color: #ccc;
-  cursor: pointer;
+}
+
+.btn-icon.star:hover {
+  color: #fbc02d;
+}
+
+.btn-icon.star.active {
+  color: #fbc02d;
+}
+
+.btn-icon.star.active:hover {
+  color: #f57f17;
 }
 </style>
