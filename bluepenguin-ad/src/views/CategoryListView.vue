@@ -1,22 +1,23 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { onMounted } from 'vue';
 import MainLayout from '../components/layout/MainLayout.vue';
 import CategoryListItem from '../components/categories/CategoryListItem.vue';
+import { useCategoryStore } from '../stores/categoryStore';
+import type { Category } from '../services/CategoryService';
 
-interface Category {
-  id: string;
-  name: string;
-  productCount: number;
-  isActive: boolean;
-}
+const store = useCategoryStore();
 
-const categories = ref<Category[]>([
-  { id: '1', name: 'Necklace', productCount: 122, isActive: true },
-  { id: '2', name: 'Bracelet', productCount: 93, isActive: true },
-  { id: '3', name: 'Earrings', productCount: 57, isActive: true },
-  { id: '4', name: 'Rings', productCount: 81, isActive: true },
-  { id: '5', name: 'Anklets', productCount: 29, isActive: true },
-]);
+onMounted(() => {
+  store.fetchCategories();
+});
+
+const handleToggleFeatured = async (category: Category) => {
+  try {
+    await store.toggleFeatured(category);
+  } catch (e: any) {
+    // Error is already handled/stored in the store for UI rendering
+  }
+};
 </script>
 
 <template>
@@ -30,6 +31,11 @@ const categories = ref<Category[]>([
              Categories
           </button>
         </div>
+      </div>
+
+      <div v-if="store.error" class="alert alert-error flex align-center gap-2">
+        <span class="material-icons-outlined">error_outline</span>
+        <span>{{ store.error }}</span>
       </div>
 
       <div class="category-content card">
@@ -47,34 +53,34 @@ const categories = ref<Category[]>([
                 <span class="material-icons-outlined">expand_more</span>
               </button>
            </div>
-           <button class="btn btn-primary add-cat-btn">
-             <span class="material-icons-outlined">add</span>
-             Add Category
-             <span class="material-icons-outlined">expand_more</span>
-           </button>
         </div>
 
         <div class="list-summary flex justify-between align-center">
-           <span class="count-text">5 Categories</span>
+           <span class="count-text" v-if="!store.isLoading">{{ store.categories.length }} Categories</span>
+           <span class="count-text" v-else>Loading...</span>
            <div class="pagination-simple flex align-center gap-2">
-              <span>1–5 of 5</span>
+              <span>1–{{ store.categories.length }} of {{ store.categories.length }}</span>
               <button class="nav-btn disabled"><span class="material-icons-outlined">chevron_left</span></button>
               <button class="nav-btn disabled"><span class="material-icons-outlined">chevron_right</span></button>
            </div>
         </div>
 
-        <div class="category-list">
+        <div class="category-list" v-if="!store.isLoading">
           <CategoryListItem 
-            v-for="cat in categories" 
+            v-for="cat in store.categories" 
             :key="cat.id" 
-            :category="cat" 
+            :category="cat"
+            :is-featured="store.isFeatured(cat.id)"
+            @toggle-featured="handleToggleFeatured"
           />
         </div>
+        
+        <div v-else class="text-center p-4">Loading categories...</div>
 
         <div class="list-footer flex justify-between align-center">
            <div></div>
            <div class="pagination-simple flex align-center gap-2">
-              <span>1–5 of 5</span>
+              <span>1–{{ store.categories.length }} of {{ store.categories.length }}</span>
               <button class="nav-btn disabled"><span class="material-icons-outlined">chevron_left</span></button>
               <button class="nav-btn"><span class="material-icons-outlined">chevron_right</span></button>
            </div>
@@ -94,6 +100,18 @@ const categories = ref<Category[]>([
 .page-header h2 {
   font-size: 24px;
   font-weight: 600;
+}
+
+.alert {
+  padding: 12px 16px;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+}
+
+.alert-error {
+  background-color: #fff5f5;
+  color: var(--danger-color, #c53030);
+  border: 1px solid #feb2b2;
 }
 
 .btn-outline {
@@ -151,12 +169,6 @@ const categories = ref<Category[]>([
 
 .btn-filter.active {
   background-color: #f8f9fa;
-}
-
-.add-cat-btn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
 }
 
 .list-summary {

@@ -8,6 +8,7 @@ import { CategoryService, type Category } from '../services/CategoryService';
 import { CollectionService, type Collection } from '../services/CollectionService';
 import { MaterialService, type Material } from '../services/MaterialService';
 import { FileUploadService } from '../services/FileUploadService';
+import { ArtisanFavService } from '../services/ArtisanFavService';
 
 const route = useRoute();
 const router = useRouter();
@@ -20,6 +21,7 @@ const collections = ref<Collection[]>([]);
 const materials = ref<Material[]>([]);
 const productImages = ref<string[]>([]);
 const primaryImageId = ref<string | null>(null);
+const isArtisanFav = ref(false);
 const isLoading = ref(true);
 const error = ref<string | null>(null);
 
@@ -46,7 +48,10 @@ const fetchProductAndMetadata = async () => {
       CollectionService.getAll().then(res => collections.value = res).catch(e => console.warn('Collections fetch failed', e)),
       MaterialService.getAll().then(res => materials.value = res).catch(e => console.warn('Materials fetch failed', e)),
       FileUploadService.getAllImagesForSku(currentSku).then(res => productImages.value = res).catch(e => console.warn('Images fetch failed', e)),
-      FileUploadService.getPrimaryImageIdForSku(currentSku).then(res => primaryImageId.value = res).catch(e => console.warn('Primary image fetch failed', e))
+      FileUploadService.getPrimaryImageIdForSku(currentSku).then(res => primaryImageId.value = res).catch(e => console.warn('Primary image fetch failed', e)),
+      ArtisanFavService.getAll().then(res => {
+        isArtisanFav.value = res.some(fav => fav.sku === currentSku);
+      }).catch(e => console.warn('Artisan Favs fetch failed', e))
     ]);
   } catch (err) {
     console.error('ProductDetailsView: Fatal fetch error:', err);
@@ -133,7 +138,13 @@ const goBack = () => {
           <button class="btn-icon back-btn" @click="goBack" title="Back">
             <span class="material-icons-outlined">arrow_back</span>
           </button>
-          <h2>{{ product?.name }}</h2>
+          <div class="title-with-badge">
+            <h2>{{ product?.name }}</h2>
+            <div v-if="isArtisanFav" class="artisan-badge-large" title="Artisan's Favorite">
+              <span class="material-icons-outlined">star</span>
+              Artisan Fav
+            </div>
+          </div>
           <span v-if="product" :class="['badge', product.status === 'In Stock' ? 'badge-success' : 'badge-danger']" style="height: fit-content; margin-top: 4px;">
             <span class="dot"></span>
             {{ product.status }}
@@ -287,6 +298,31 @@ const goBack = () => {
   font-size: 24px;
   font-weight: 600;
   margin: 0;
+}
+
+.title-with-badge {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.artisan-badge-large {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+  color: #d97706; /* Amber 600 */
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  border: 1px solid #fde68a;
+  box-shadow: 0 2px 4px rgba(251, 191, 36, 0.1);
+}
+
+.artisan-badge-large .material-icons-outlined {
+  font-size: 16px;
+  color: #f59e0b; /* Amber 500 */
 }
 
 .back-btn {

@@ -9,6 +9,7 @@ import { CollectionService } from '../services/CollectionService';
 import { MaterialService } from '../services/MaterialService';
 import { FeatureService } from '../services/FeatureService';
 import { FileUploadService } from '../services/FileUploadService';
+import { ArtisanFavService } from '../services/ArtisanFavService';
 
 const router = useRouter();
 const route = useRoute();
@@ -42,8 +43,11 @@ const product = ref<Partial<Product>>({
   status: 'Active',
   yearCode: 0,
   sequenceCode: 0,
-  stock: 0
+  stock: 0,
+  isArtisanFav: false
 });
+
+const originalIsArtisanFav = ref(false);
 
 // Dropdown options
 const categories = ref<{id: string, name: string}[]>([]);
@@ -90,13 +94,14 @@ const fetchData = async () => {
   isLoading.value = true;
   error.value = null;
   try {
-    const [catData, collData, matData, featData, productData, imagesData] = await Promise.all([
+    const [catData, collData, matData, featData, productData, imagesData, favsData] = await Promise.all([
       CategoryService.getAll(),
       CollectionService.getAll(),
       MaterialService.getAll(),
       FeatureService.getAll(),
       ProductService.getBySku(skuId),
-      FileUploadService.getAllImagesForSku(skuId)
+      FileUploadService.getAllImagesForSku(skuId),
+      ArtisanFavService.getAll()
     ]);
     
     categories.value = catData;
@@ -104,6 +109,9 @@ const fetchData = async () => {
     materials.value = matData;
     features.value = featData;
     existingImages.value = imagesData;
+    
+    const isFav = favsData.some(fav => fav.sku === skuId);
+    originalIsArtisanFav.value = isFav;
     primaryImageId.value = await FileUploadService.getPrimaryImageIdForSku(skuId);
     
     // Fill the form with existing product data
@@ -123,7 +131,8 @@ const fetchData = async () => {
       status: productData.status,
       yearCode: productData.yearCode,
       sequenceCode: productData.sequenceCode,
-      stock: productData.stock || 0
+      stock: productData.stock || 0,
+      isArtisanFav: isFav
     };
   } catch (err) {
     console.error('Failed to fetch data:', err);
@@ -154,6 +163,27 @@ const handleUpdate = async () => {
   try {
     await ProductService.update(product.value);
     
+    // Update Artisan Fav status if changed
+    let failedFavUpdate = false;
+    const currentIsFav = !!product.value.isArtisanFav;
+    if (currentIsFav !== originalIsArtisanFav.value) {
+      try {
+        if (currentIsFav) {
+          await ArtisanFavService.create(skuId);
+        } else {
+          await ArtisanFavService.delete(skuId);
+        }
+        originalIsArtisanFav.value = currentIsFav;
+      } catch (favErr: any) {
+        console.error('Failed to update Artisan Fav status', favErr);
+        const backendMessage = favErr.message || 'Unknown error updating artisan fav';
+        error.value = `Product details updated, but ${backendMessage}`;
+        // Revert UI toggle since it failed
+        product.value.isArtisanFav = originalIsArtisanFav.value;
+        failedFavUpdate = true;
+      }
+    }
+    
     // Upload secondary images
     if (selectedFiles.value.length > 0) {
       isUploading.value = true;
@@ -173,12 +203,15 @@ const handleUpdate = async () => {
       }
     }
     
-    successMessage.value = 'Product updated successfully! Redirecting...';
-    setTimeout(() => {
-      router.push(`/products/${skuId}`);
-    }, 2000);
-  } catch (err) {
-    error.value = 'Failed to update product. Please check your data and try again.';
+    if (!failedFavUpdate) {
+      successMessage.value = 'Product updated successfully! Redirecting...';
+      setTimeout(() => {
+        router.push(`/products/${skuId}`);
+      }, 2000);
+    }
+  } catch (err: any) {
+    const backendMessage = err.message || 'Unknown error';
+    error.value = `Failed to update product: ${backendMessage}`;
     console.error(err);
   } finally {
     isSubmitting.value = false;
@@ -376,6 +409,22 @@ const getImageUrl = (imageId: string) => {
                   <span :class="['badge', product.status === 'In Stock' ? 'badge-success' : 'badge-danger']">
                     {{ product.status }}
                   </span>
+                </div>
+              </div>
+
+              <div class="form-section full-width">
+                <div class="toggle-container card p-4 flex justify-between align-center">
+                  <div class="toggle-info">
+                    <label class="toggle-label flex align-center gap-2 mb-1">
+                      <span class="material-icons-outlined text-warning">star</span>
+                      Artisan's Favorite
+                    </label>
+                    <p class="text-muted text-sm m-0">Mark this product to be featured prominently as an Artisan's Favorite.</p>
+                  </div>
+                  <label class="switch">
+                    <input type="checkbox" v-model="product.isArtisanFav">
+                    <span class="slider round"></span>
+                  </label>
                 </div>
               </div>
             </div>
@@ -768,6 +817,86 @@ textarea.form-input {
   color: var(--text-muted);
   font-size: 12px;
   font-family: monospace;
+}
+
+.text-warning {
+  color: #f59e0b;
+}
+
+.text-sm {
+  font-size: 13px;
+}
+
+.m-0 {
+  margin: 0;
+}
+
+.toggle-container {
+  border-left: 4px solid #f59e0b;
+  background: linear-gradient(to right, #fffbeb, white);
+}
+
+.toggle-label {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-main);
+  margin-bottom: 4px;
+}
+
+/* Toggle Switch Styles */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 50px;
+  height: 28px;
+}
+
+.switch input { 
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  transition: .4s;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 20px;
+  width: 20px;
+  left: 4px;
+  bottom: 4px;
+  background-color: white;
+  transition: .4s;
+}
+
+input:checked + .slider {
+  background-color: #f59e0b;
+}
+
+input:focus + .slider {
+  box-shadow: 0 0 1px #f59e0b;
+}
+
+input:checked + .slider:before {
+  transform: translateX(22px);
+}
+
+.slider.round {
+  border-radius: 34px;
+}
+
+.slider.round:before {
+  border-radius: 50%;
 }
 
 .mt-2 { margin-top: 8px; }
