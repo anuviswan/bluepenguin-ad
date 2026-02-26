@@ -191,9 +191,23 @@ const handleUpdate = async () => {
     if (selectedFiles.value.length > 0) {
       isUploading.value = true;
       try {
-        await Promise.all(selectedFiles.value.map((file, index) => 
-          FileUploadService.uploadImage(skuId, file, index === primaryImageIndex.value)
-        ));
+        // Upload primary image first if it exists
+        if (primaryImageIndex.value >= 0 && primaryImageIndex.value < selectedFiles.value.length) {
+          const primaryFile = selectedFiles.value[primaryImageIndex.value];
+          if (primaryFile) {
+            await FileUploadService.uploadImage(skuId, primaryFile, true);
+          }
+        }
+        
+        // Then upload remaining images sequentially
+        for (let i = 0; i < selectedFiles.value.length; i++) {
+          if (i !== primaryImageIndex.value) {
+            const currentFile = selectedFiles.value[i];
+            if (currentFile) {
+              await FileUploadService.uploadImage(skuId, currentFile, false);
+            }
+          }
+        }
         selectedFiles.value = [];
         imagePreviews.value = [];
         // Refresh existing images
@@ -261,19 +275,52 @@ const triggerBrowse = () => {
   fileInput.value?.click();
 };
 
-const handleFileChange = (event: Event) => {
+const handleFileChange = async (event: Event) => {
   const target = event.target as HTMLInputElement;
   if (!target.files) return;
 
   const files = Array.from(target.files);
-  files.forEach(file => {
-    selectedFiles.value.push(file);
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      imagePreviews.value.push(e.target?.result as string);
-    };
-    reader.readAsDataURL(file);
-  });
+  const maxFileSize = 500 * 1024; // 500KB
+  const requiredWidth = 1200;
+  const requiredHeight = 1200;
+
+  for (const file of files) {
+    if (file.size > maxFileSize) {
+      error.value = `Image ${file.name} exceeds the maximum allowed size of 500KB.`;
+      continue;
+    }
+
+    try {
+      // Check image dimensions
+      const img = new Image();
+      const objectUrl = URL.createObjectURL(file);
+      
+      await new Promise((resolve, reject) => {
+        img.onload = () => resolve(true);
+        img.onerror = reject;
+        img.src = objectUrl;
+      });
+
+      if (img.width !== requiredWidth || img.height !== requiredHeight) {
+        error.value = `Image ${file.name} must be exactly 1200x1200px. Current size: ${img.width}x${img.height}px.`;
+        URL.revokeObjectURL(objectUrl);
+        continue;
+      }
+      
+      URL.revokeObjectURL(objectUrl);
+      
+      // Image is valid
+      selectedFiles.value.push(file);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        imagePreviews.value.push(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    } catch (err) {
+      console.error('Error validating image dimensions:', err);
+      error.value = `Failed to validate image ${file.name}.`;
+    }
+  }
   
   target.value = '';
 };
@@ -551,7 +598,7 @@ const handleDelete = async () => {
               <div class="upload-area" @click="triggerBrowse">
                 <span class="material-icons-outlined upload-icon">cloud_upload</span>
                 <p>Drag & drop images here, or <span class="browse-link">Browse</span></p>
-                <p class="upload-hint">Recommended size: 800x800px</p>
+                <p class="upload-hint">Exactly 1200x1200px. Max size 500KB.</p>
               </div>
 
               <div v-if="imagePreviews.length > 0" class="previews-grid mt-6">
