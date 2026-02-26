@@ -1,13 +1,9 @@
 <template>
   <aside class="sidebar">
     <div class="brand">
-      <div class="logo-placeholder">
-        <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="16" cy="16" r="16" fill="#2B579A"/>
-          <path d="M16 8C11.5817 8 8 11.5817 8 16C8 20.4183 11.5817 24 16 24C20.4183 24 24 20.4183 24 16C24 11.5817 20.4183 8 16 8ZM16 22C12.6863 22 10 19.3137 10 16C10 12.6863 12.6863 10 16 10C19.3137 10 22 12.6863 22 16C22 19.3137 19.3137 22 16 22Z" fill="white"/>
-        </svg>
+      <div class="logo-container">
+        <img src="../../assets/Logo 3.png" alt="Blue Penguin Logo" class="brand-logo" />
       </div>
-      <span class="brand-name">Blue Penguin</span>
     </div>
 
     <nav class="nav-menu">
@@ -83,8 +79,21 @@ const handleLogout = () => {
   height: var(--topbar-height);
   display: flex;
   align-items: center;
-  padding: 0 24px;
-  gap: 12px;
+  justify-content: center;
+  padding: 16px 24px;
+}
+
+.logo-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+.brand-logo {
+  max-width: 100%;
+  max-height: 50px;
+  object-fit: contain;
 }
 
 .brand-name {
