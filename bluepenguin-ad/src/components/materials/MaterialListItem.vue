@@ -1,14 +1,21 @@
 <script setup lang="ts">
 import type { Material } from '../../services/MaterialService';
 
-defineProps<{
+const props = defineProps<{
   material: Material;
 }>();
+
+import { useRouter } from 'vue-router';
+const router = useRouter();
+
+const handleItemClick = () => {
+  router.push(`/?material=${props.material.id}`);
+};
 </script>
 
 <template>
-  <div class="material-item flex align-center gap-4">
-    <div class="col-drag drag-handle">
+  <div class="material-item flex align-center gap-4 clickable" @click="handleItemClick">
+    <div class="col-drag drag-handle" @click.stop>
       <span class="material-icons-outlined">drag_indicator</span>
     </div>
     
@@ -29,13 +36,13 @@ defineProps<{
     </div>
 
     <div class="col-actions item-actions">
-      <button class="btn-icon edit" title="Edit">
+      <button class="btn-icon edit" title="Edit" @click.stop>
         <span class="material-icons-outlined">edit</span>
       </button>
-      <button class="btn-icon delete" title="Delete">
+      <button class="btn-icon delete" title="Delete" @click.stop>
         <span class="material-icons-outlined">delete_outline</span>
       </button>
-      <span class="material-icons-outlined more-icon">more_vert</span>
+      <span class="material-icons-outlined more-icon" @click.stop>more_vert</span>
     </div>
   </div>
 </template>
@@ -48,6 +55,10 @@ defineProps<{
   background-color: white;
   border-bottom: 1px solid var(--border-color);
   transition: background-color 0.2s;
+}
+
+.material-item.clickable {
+  cursor: pointer;
 }
 
 .material-item:hover {

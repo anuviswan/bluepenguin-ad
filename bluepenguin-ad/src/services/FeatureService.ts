@@ -23,22 +23,29 @@ export class FeatureService {
      */
     static async getAll(): Promise<Feature[]> {
         try {
-            // The user specified /api/Feature/getall
-            // Looking at bp.webapi.json, /api/Feature/getall exists
             const response = await api.get<any[]>('/api/Feature/getall');
 
-            // We need to map the API response to our UI Feature model.
-            // Usually these "getall" endpoints return an array of items.
-            // Based on bp.webapi.json MetaDataEntity and AddFeatureRequest:
-            // it might have properties like 'featureName', 'featureId' or 'rowKey', 'title'.
-
-            return response.map((item: any) => ({
+            const features = response.map((item: any) => ({
                 id: item.featureId || item.rowKey || item.id || Math.random().toString(),
                 name: item.featureName || item.title || item.name || 'Unknown Feature',
                 symbolicText: item.symbolic || item.symbolicText,
                 productCount: item.productCount || 0,
                 isActive: item.isActive ?? true,
             }));
+
+            // Fetch product counts dynamically since the getall API doesn't return them
+            await Promise.allSettled(features.map(async (feature: Feature) => {
+                try {
+                    const searchRes = await api.post<any>('/api/Product/search', {
+                        selectedFeatures: [feature.id]
+                    }, { params: { page: '1', pageSize: '1' } });
+                    feature.productCount = searchRes?.totalCount || 0;
+                } catch (e) {
+                    console.warn(`Could not fetch count for feature ${feature.id}`);
+                }
+            }));
+
+            return features;
         } catch (error) {
             console.error('Failed to fetch features:', error);
             throw error;

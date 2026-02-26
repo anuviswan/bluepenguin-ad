@@ -65,6 +65,59 @@ export class ProductService {
         }
     }
 
+    static async search(
+        filters: { category?: string; material?: string; collection?: string; feature?: string },
+        page: number = 1,
+        pageSize: number = 10
+    ): Promise<{ products: Product[], totalCount: number }> {
+        try {
+            const tempSearchParam: any = {};
+            if (filters.category) tempSearchParam.selectedCategories = [filters.category];
+            if (filters.material) tempSearchParam.selectedMaterials = [filters.material];
+            if (filters.collection) tempSearchParam.selectedCollections = [filters.collection];
+            if (filters.feature) tempSearchParam.selectedFeatures = [filters.feature];
+
+            const response = await api.post<{ items: any[], totalCount?: number } | any>('/api/Product/search', tempSearchParam, {
+                params: {
+                    page: page.toString(),
+                    pageSize: pageSize.toString()
+                }
+            });
+
+            const items = Array.isArray(response) ? response : (response.items || []);
+            const totalCount = Array.isArray(response) ? items.length : (response.totalCount || items.length);
+
+            const products = items.map((item: any) => {
+                const skuVal = item.sku || item.skuId || 'N/A';
+                const extractedSeq = skuVal.length >= 2 ? parseInt(skuVal.slice(-2)) : 0;
+
+                return {
+                    sku: skuVal,
+                    name: item.productName || 'Unknown Product',
+                    description: item.description,
+                    productCare: item.productCare || [],
+                    specifications: item.specifications || [],
+                    price: item.price || 0,
+                    discountPrice: item.discountPrice,
+                    discountExpiryDate: item.discountExpiryDate,
+                    category: item.categoryCode || '-',
+                    material: item.materialCode || item.material || item.productMaterial || '-',
+                    featureCodes: item.featureCodes || [],
+                    collectionCode: item.collectionCode || '-',
+                    yearCode: item.yearCode || 0,
+                    sequenceCode: item.sequenceCode || extractedSeq,
+                    status: (item.stock || 0) > 0 ? 'In Stock' : 'Out of Stock',
+                    stock: item.stock || 0
+                };
+            });
+
+            return { products, totalCount };
+        } catch (error) {
+            console.error('Failed to search products:', error);
+            throw error;
+        }
+    }
+
     static async create(product: Partial<Product>): Promise<any> {
         try {
             return await api.post<any>('/api/Product/create', {
