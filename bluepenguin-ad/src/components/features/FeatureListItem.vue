@@ -18,11 +18,15 @@ const router = useRouter();
 const handleEdit = () => {
   router.push(`/features/edit/${props.feature.id}`);
 };
+
+const handleItemClick = () => {
+  router.push(`/?feature=${props.feature.id}`);
+};
 </script>
 
 <template>
-  <div class="feature-item flex align-center gap-4">
-    <div class="col-drag drag-handle">
+  <div class="feature-item flex align-center gap-4 clickable" @click="handleItemClick">
+    <div class="col-drag drag-handle" @click.stop>
       <span class="material-icons-outlined">drag_indicator</span>
     </div>
     
@@ -51,10 +55,10 @@ const handleEdit = () => {
     </div>
 
     <div class="col-actions item-actions">
-      <button class="btn-icon edit" title="Edit" @click="handleEdit">
+      <button class="btn-icon edit" title="Edit" @click.stop="handleEdit">
         <span class="material-icons-outlined">edit</span>
       </button>
-      <span class="material-icons-outlined more-icon">more_vert</span>
+      <span class="material-icons-outlined more-icon" @click.stop>more_vert</span>
     </div>
   </div>
 </template>
@@ -67,6 +71,10 @@ const handleEdit = () => {
   background-color: white;
   border-bottom: 1px solid var(--border-color);
   transition: background-color 0.2s;
+}
+
+.feature-item.clickable {
+  cursor: pointer;
 }
 
 .feature-item:hover {

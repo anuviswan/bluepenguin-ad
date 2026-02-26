@@ -14,11 +14,18 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'toggle-featured', category: Category): void
 }>();
+
+import { useRouter } from 'vue-router';
+const router = useRouter();
+
+const handleItemClick = () => {
+  router.push(`/?category=${props.category.id}`);
+};
 </script>
 
 <template>
-  <div class="category-item">
-    <div class="drag-handle">
+  <div class="category-item clickable" @click="handleItemClick">
+    <div class="drag-handle" @click.stop>
       <span class="material-icons-outlined">drag_indicator</span>
     </div>
     
@@ -35,7 +42,7 @@ const emit = defineEmits<{
       <button 
         class="btn-icon star" 
         :class="{ active: isFeatured }" 
-        @click="emit('toggle-featured', category)"
+        @click.stop="emit('toggle-featured', category)"
         :title="isFeatured ? 'Remove as Featured' : 'Mark as Featured'"
       >
         <span class="material-icons-outlined">
@@ -55,6 +62,10 @@ const emit = defineEmits<{
   border-bottom: 1px solid var(--border-color);
   gap: 16px;
   transition: background-color 0.2s;
+}
+
+.category-item.clickable {
+  cursor: pointer;
 }
 
 .category-item:hover {

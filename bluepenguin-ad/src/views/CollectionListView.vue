@@ -26,6 +26,25 @@ const fetchCollections = async () => {
 onMounted(() => {
   fetchCollections();
 });
+
+const exportToMarkdown = () => {
+  if (!collections.value.length) return;
+
+  const title = '# Collection List\n\n';
+  const header = '| ID | Name |\n| --- | --- |\n';
+  const rows = collections.value.map(c => `| ${c.id} | ${c.name} |`).join('\n');
+  
+  const markdownContent = title + header + rows;
+  const blob = new Blob([markdownContent], { type: 'text/markdown' });
+  const url = URL.createObjectURL(blob);
+  
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'collections_export.md';
+  a.click();
+  
+  URL.revokeObjectURL(url);
+};
 </script>
 
 <template>
@@ -34,6 +53,10 @@ onMounted(() => {
       <div class="page-header justify-between align-center">
         <h2>Collections</h2>
         <div class="header-actions flex gap-4">
+          <button class="btn btn-outline flex align-center gap-2" @click="exportToMarkdown">
+            <span class="material-icons-outlined">download</span>
+            Export
+          </button>
           <button class="btn btn-outline flex align-center gap-2">
              <span class="material-icons-outlined">arrow_back</span>
              Collections
