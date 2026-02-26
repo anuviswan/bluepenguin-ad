@@ -150,9 +150,23 @@ const handlePublish = async () => {
       isUploading.value = true;
       successMessage.value = 'Product created! Uploading images...';
       try {
-        await Promise.all(selectedFiles.value.map((file, index) => 
-          FileUploadService.uploadImage(skuToUse, file, index === primaryImageIndex.value)
-        ));
+        // Upload primary image first if it exists
+        if (primaryImageIndex.value >= 0 && primaryImageIndex.value < selectedFiles.value.length) {
+          const primaryFile = selectedFiles.value[primaryImageIndex.value];
+          if (primaryFile) {
+            await FileUploadService.uploadImage(skuToUse, primaryFile, true);
+          }
+        }
+        
+        // Then upload remaining images sequentially
+        for (let i = 0; i < selectedFiles.value.length; i++) {
+          if (i !== primaryImageIndex.value) {
+            const currentFile = selectedFiles.value[i];
+            if (currentFile) {
+              await FileUploadService.uploadImage(skuToUse, currentFile, false);
+            }
+          }
+        }
       } catch (uploadErr) {
         console.error('Some images failed to upload', uploadErr);
         error.value = 'Product created, but some images failed to upload.';

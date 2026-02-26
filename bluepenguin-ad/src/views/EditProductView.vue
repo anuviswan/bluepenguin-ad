@@ -191,9 +191,23 @@ const handleUpdate = async () => {
     if (selectedFiles.value.length > 0) {
       isUploading.value = true;
       try {
-        await Promise.all(selectedFiles.value.map((file, index) => 
-          FileUploadService.uploadImage(skuId, file, index === primaryImageIndex.value)
-        ));
+        // Upload primary image first if it exists
+        if (primaryImageIndex.value >= 0 && primaryImageIndex.value < selectedFiles.value.length) {
+          const primaryFile = selectedFiles.value[primaryImageIndex.value];
+          if (primaryFile) {
+            await FileUploadService.uploadImage(skuId, primaryFile, true);
+          }
+        }
+        
+        // Then upload remaining images sequentially
+        for (let i = 0; i < selectedFiles.value.length; i++) {
+          if (i !== primaryImageIndex.value) {
+            const currentFile = selectedFiles.value[i];
+            if (currentFile) {
+              await FileUploadService.uploadImage(skuId, currentFile, false);
+            }
+          }
+        }
         selectedFiles.value = [];
         imagePreviews.value = [];
         // Refresh existing images
