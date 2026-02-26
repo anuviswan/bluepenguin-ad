@@ -54,11 +54,17 @@ export class FeatureService {
 
     static async create(id: string, name: string, symbolicText?: string): Promise<void> {
         // /api/Feature/create exists in bp.webapi.json
-        await api.post('/api/Feature/create', {
+        const payload: any = {
             featureId: id,
             featureName: name,
-            symbolic: symbolicText
-        });
+        };
+
+        if (symbolicText) {
+            payload.symbolic = symbolicText;
+            payload.symbolicText = symbolicText;
+        }
+
+        await api.post('/api/Feature/create', payload);
     }
 
     static async getById(id: string): Promise<Feature | null> {
@@ -73,11 +79,17 @@ export class FeatureService {
 
     static async update(id: string, name: string, symbolicText?: string): Promise<void> {
         try {
-            await api.put('/api/Feature/update', {
+            const payload: any = {
                 featureId: id,
                 featureName: name,
-                symbolic: symbolicText
-            });
+            };
+
+            if (symbolicText) {
+                payload.symbolic = symbolicText;
+                payload.symbolicText = symbolicText;
+            }
+
+            await api.put('/api/Feature/update', payload);
         } catch (error) {
             console.error(`Failed to update feature with ID ${id}:`, error);
             throw error;
