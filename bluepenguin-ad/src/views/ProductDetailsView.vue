@@ -9,6 +9,7 @@ import { CollectionService, type Collection } from '../services/CollectionServic
 import { MaterialService, type Material } from '../services/MaterialService';
 import { FileUploadService } from '../services/FileUploadService';
 import { ArtisanFavService } from '../services/ArtisanFavService';
+import DeleteConfirmModal from '../components/shared/DeleteConfirmModal.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -24,6 +25,8 @@ const primaryImageId = ref<string | null>(null);
 const isArtisanFav = ref(false);
 const isLoading = ref(true);
 const error = ref<string | null>(null);
+const isDeleteModalOpen = ref(false);
+const isDeleting = ref(false);
 
 const fetchProductAndMetadata = async () => {
   const currentSku = route.params.sku as string;
@@ -121,6 +124,29 @@ onMounted(() => {
 const goBack = () => {
   router.back();
 };
+
+const openDeleteModal = () => {
+  isDeleteModalOpen.value = true;
+};
+
+const handleDelete = async () => {
+  if (!product.value || !product.value.sku) return;
+  
+  isDeleting.value = true;
+  try {
+    await ProductService.delete(product.value.sku);
+    // On success, navigate back to products list
+    router.push('/');
+  } catch (err: any) {
+    console.error('Failed to delete product', err);
+    // For now, let's just log or show a simple alert.
+    // In a real app we'd trigger a toast notification here.
+    alert(`Failed to delete product: ${err.message || 'Unknown error'}`);
+  } finally {
+    isDeleting.value = false;
+    isDeleteModalOpen.value = false;
+  }
+};
 </script>
 
 <template>
@@ -151,7 +177,11 @@ const goBack = () => {
           </span>
         </div>
         <div class="header-actions flex gap-4">
-          <router-link :to="`/products/edit/${sku}`" class="btn btn-outline flex align-center gap-2">
+          <button class="btn btn-danger flex align-center gap-2" @click="openDeleteModal" :disabled="isDeleting">
+            <span class="material-icons-outlined">delete</span>
+            Delete
+          </button>
+          <router-link :to="`/products/edit/${sku}`" class="btn btn-outline flex align-center gap-2" :class="{ 'disabled-link': isDeleting }">
             <span class="material-icons-outlined">edit</span>
             Edit Product
           </router-link>
@@ -264,6 +294,12 @@ const goBack = () => {
           </div>
         </div>
       </div>
+
+      <DeleteConfirmModal 
+        v-model:isOpen="isDeleteModalOpen"
+        :itemName="product?.name || sku"
+        @confirm="handleDelete"
+      />
     </div>
   </MainLayout>
 </template>
@@ -335,6 +371,11 @@ const goBack = () => {
   background-color: var(--bg-main);
   color: var(--primary-color);
   border-color: var(--primary-color);
+}
+
+.disabled-link {
+  pointer-events: none;
+  opacity: 0.6;
 }
 
 .details-grid {

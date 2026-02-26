@@ -146,4 +146,13 @@ export class ProductService {
             throw error;
         }
     }
+
+    static async delete(sku: string): Promise<void> {
+        try {
+            await api.delete(`/api/Product/delete/${sku}`);
+        } catch (error) {
+            console.error(`Failed to delete product with SKU ${sku}:`, error);
+            throw error;
+        }
+    }
 }
