@@ -10,6 +10,7 @@ import { MaterialService } from '../services/MaterialService';
 import { FeatureService } from '../services/FeatureService';
 import { FileUploadService } from '../services/FileUploadService';
 import { ArtisanFavService } from '../services/ArtisanFavService';
+import DeleteConfirmModal from '../components/shared/DeleteConfirmModal.vue';
 
 const router = useRouter();
 const route = useRoute();
@@ -59,6 +60,8 @@ const isLoading = ref(true);
 const isSubmitting = ref(false);
 const error = ref<string | null>(null);
 const successMessage = ref<string | null>(null);
+const isDeleteModalOpen = ref(false);
+const isDeleting = ref(false);
 
 // List item helpers
 const newItemCare = ref('');
@@ -188,9 +191,23 @@ const handleUpdate = async () => {
     if (selectedFiles.value.length > 0) {
       isUploading.value = true;
       try {
-        await Promise.all(selectedFiles.value.map((file, index) => 
-          FileUploadService.uploadImage(skuId, file, index === primaryImageIndex.value)
-        ));
+        // Upload primary image first if it exists
+        if (primaryImageIndex.value >= 0 && primaryImageIndex.value < selectedFiles.value.length) {
+          const primaryFile = selectedFiles.value[primaryImageIndex.value];
+          if (primaryFile) {
+            await FileUploadService.uploadImage(skuId, primaryFile, true);
+          }
+        }
+        
+        // Then upload remaining images sequentially
+        for (let i = 0; i < selectedFiles.value.length; i++) {
+          if (i !== primaryImageIndex.value) {
+            const currentFile = selectedFiles.value[i];
+            if (currentFile) {
+              await FileUploadService.uploadImage(skuId, currentFile, false);
+            }
+          }
+        }
         selectedFiles.value = [];
         imagePreviews.value = [];
         // Refresh existing images
@@ -258,19 +275,52 @@ const triggerBrowse = () => {
   fileInput.value?.click();
 };
 
-const handleFileChange = (event: Event) => {
+const handleFileChange = async (event: Event) => {
   const target = event.target as HTMLInputElement;
   if (!target.files) return;
 
   const files = Array.from(target.files);
-  files.forEach(file => {
-    selectedFiles.value.push(file);
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      imagePreviews.value.push(e.target?.result as string);
-    };
-    reader.readAsDataURL(file);
-  });
+  const maxFileSize = 500 * 1024; // 500KB
+  const requiredWidth = 1200;
+  const requiredHeight = 1200;
+
+  for (const file of files) {
+    if (file.size > maxFileSize) {
+      error.value = `Image ${file.name} exceeds the maximum allowed size of 500KB.`;
+      continue;
+    }
+
+    try {
+      // Check image dimensions
+      const img = new Image();
+      const objectUrl = URL.createObjectURL(file);
+      
+      await new Promise((resolve, reject) => {
+        img.onload = () => resolve(true);
+        img.onerror = reject;
+        img.src = objectUrl;
+      });
+
+      if (img.width !== requiredWidth || img.height !== requiredHeight) {
+        error.value = `Image ${file.name} must be exactly 1200x1200px. Current size: ${img.width}x${img.height}px.`;
+        URL.revokeObjectURL(objectUrl);
+        continue;
+      }
+      
+      URL.revokeObjectURL(objectUrl);
+      
+      // Image is valid
+      selectedFiles.value.push(file);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        imagePreviews.value.push(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    } catch (err) {
+      console.error('Error validating image dimensions:', err);
+      error.value = `Failed to validate image ${file.name}.`;
+    }
+  }
   
   target.value = '';
 };
@@ -314,6 +364,27 @@ const removeExistingImage = async (imageId: string) => {
 
 const getImageUrl = (imageId: string) => {
   return FileUploadService.getImageUrl(skuId, imageId);
+};
+
+const openDeleteModal = () => {
+  isDeleteModalOpen.value = true;
+};
+
+const handleDelete = async () => {
+  isDeleting.value = true;
+  try {
+    await ProductService.delete(skuId);
+    successMessage.value = 'Product deleted successfully! Redirecting...';
+    setTimeout(() => {
+      router.push('/');
+    }, 1500);
+  } catch (err: any) {
+    console.error('Failed to delete product', err);
+    error.value = `Failed to delete product: ${err.message || 'Unknown error'}`;
+  } finally {
+    isDeleting.value = false;
+    isDeleteModalOpen.value = false;
+  }
 };
 </script>
 
@@ -481,6 +552,7 @@ const getImageUrl = (imageId: string) => {
                   class="choice-label card selected readonly"
                 >
                   {{ features.find(f => f.id === code)?.name || code }}
+                  <span v-if="features.find(f => f.id === code)" class="code-suffix">({{ code }})</span>
                 </div>
               </div>
               <p v-else class="text-muted mt-4">No features assigned to this product.</p>
@@ -527,7 +599,7 @@ const getImageUrl = (imageId: string) => {
               <div class="upload-area" @click="triggerBrowse">
                 <span class="material-icons-outlined upload-icon">cloud_upload</span>
                 <p>Drag & drop images here, or <span class="browse-link">Browse</span></p>
-                <p class="upload-hint">Recommended size: 800x800px</p>
+                <p class="upload-hint">Exactly 1200x1200px. Max size 500KB.</p>
               </div>
 
               <div v-if="imagePreviews.length > 0" class="previews-grid mt-6">
@@ -601,19 +673,23 @@ const getImageUrl = (imageId: string) => {
           <!-- Form Actions -->
           <div class="form-actions flex justify-between gap-4 mt-8">
             <div class="flex gap-4">
-              <button class="btn btn-outline" @click="handleCancel" :disabled="isSubmitting">Cancel</button>
-              <button v-if="activeTab !== 'basic'" class="btn btn-outline" @click="prevTab" :disabled="isSubmitting">
+              <button class="btn btn-outline" @click="handleCancel" :disabled="isSubmitting || isDeleting">Cancel</button>
+              <button v-if="activeTab !== 'basic'" class="btn btn-outline" @click="prevTab" :disabled="isSubmitting || isDeleting">
                 Back
+              </button>
+              <button class="btn btn-danger flex align-center gap-2" @click="openDeleteModal" :disabled="isSubmitting || isDeleting">
+                <span class="material-icons-outlined">delete</span>
+                Delete
               </button>
             </div>
             
             <div class="flex gap-4">
-              <button v-if="activeTab !== 'pricing'" class="btn btn-primary" @click="nextTab" :disabled="isSubmitting">
+              <button v-if="activeTab !== 'pricing'" class="btn btn-primary" @click="nextTab" :disabled="isSubmitting || isDeleting">
                 Next
               </button>
               
               <template v-else>
-                <button class="btn btn-primary" @click="handleUpdate" :disabled="isSubmitting || isUploading">
+                <button class="btn btn-primary" @click="handleUpdate" :disabled="isSubmitting || isUploading || isDeleting">
                   {{ isSubmitting ? 'Updating...' : (isUploading ? 'Uploading Images...' : 'Update Product') }}
                 </button>
               </template>
@@ -621,6 +697,12 @@ const getImageUrl = (imageId: string) => {
           </div>
         </div>
       </template>
+
+      <DeleteConfirmModal 
+        v-model:isOpen="isDeleteModalOpen"
+        :itemName="product.name || skuId"
+        @confirm="handleDelete"
+      />
     </div>
   </MainLayout>
 </template>

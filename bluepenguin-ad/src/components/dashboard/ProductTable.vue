@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { ProductService, type Product } from '../../services/ProductService';
 import { CategoryService } from '../../services/CategoryService';
 import { CollectionService } from '../../services/CollectionService';
 import { MaterialService } from '../../services/MaterialService';
+import { FeatureService } from '../../services/FeatureService';
 import { FileUploadService } from '../../services/FileUploadService';
 import { ArtisanFavService } from '../../services/ArtisanFavService';
 
@@ -13,6 +14,7 @@ const totalCount = ref(0);
 const categories = ref<{id: string, name: string}[]>([]);
 const collections = ref<{id: string, name: string}[]>([]);
 const materials = ref<{id: string, name: string}[]>([]);
+const features = ref<{id: string, name: string}[]>([]);
 const statuses = ref<string[]>(['Status', 'In Stock', 'Out of Stock']);
 const productThumbnails = ref<Record<string, string | null>>({});
 const artisanFavs = ref<string[]>([]);
@@ -27,6 +29,7 @@ const searchQuery = ref('');
 const selectedCategory = ref('');
 const selectedCollection = ref('');
 const selectedMaterial = ref('');
+const selectedFeature = ref('');
 const selectedStatus = ref('Status');
 
 // Pagination
@@ -43,23 +46,11 @@ const filteredProducts = computed(() => {
       product.name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
       (product.sku?.toLowerCase().includes(searchQuery.value.toLowerCase()) ?? false);
 
-    // Category filter
-    const matchesCategory = !selectedCategory.value || 
-      product.category === selectedCategory.value;
-
-    // Collection filter
-    const matchesCollection = !selectedCollection.value || 
-      product.collectionCode === selectedCollection.value;
-
-    // Material filter
-    const matchesMaterial = !selectedMaterial.value || 
-      product.material === selectedMaterial.value;
-
     // Status filter
     const matchesStatus = selectedStatus.value === 'Status' || 
       product.status === selectedStatus.value;
 
-    return matchesSearch && matchesCategory && matchesCollection && matchesMaterial && matchesStatus;
+    return matchesSearch && matchesStatus;
   });
 });
 
@@ -78,9 +69,29 @@ const prevPage = () => setPage(currentPage.value - 1);
 const fetchProducts = async () => {
   isLoading.value = true;
   try {
-    const { products: data, totalCount: count } = await ProductService.getAll(currentPage.value, pageSize.value);
+    const hasDropdownFilters = selectedCategory.value || selectedCollection.value || selectedMaterial.value || selectedFeature.value;
+
+    let total;
+    let data;
+
+    if (hasDropdownFilters) {
+       const filters = {
+          category: selectedCategory.value || undefined,
+          collection: selectedCollection.value || undefined,
+          material: selectedMaterial.value || undefined,
+          feature: selectedFeature.value || undefined
+       };
+       const res = await ProductService.search(filters, currentPage.value, pageSize.value);
+       data = res.products;
+       total = res.totalCount;
+    } else {
+       const res = await ProductService.getAll(currentPage.value, pageSize.value);
+       data = res.products;
+       total = res.totalCount;
+    }
+
     products.value = data;
-    totalCount.value = count;
+    totalCount.value = total;
     // Load thumbnails for the visible products
     loadThumbnails(data);
   } catch (err) {
@@ -113,23 +124,22 @@ const fetchData = async () => {
   isLoading.value = true;
   error.value = null;
   try {
-    const [productsResult, categoriesData, collectionsData, materialsData, favsData] = await Promise.all([
-      ProductService.getAll(currentPage.value, pageSize.value),
+    const [categoriesData, collectionsData, materialsData, featuresData, favsData] = await Promise.all([
       CategoryService.getAll(),
       CollectionService.getAll(),
       MaterialService.getAll(),
+      FeatureService.getAll(),
       ArtisanFavService.getAll()
     ]);
 
-    products.value = productsResult.products;
-    totalCount.value = productsResult.totalCount;
     categories.value = categoriesData.map(c => ({ id: c.id, name: c.name }));
     collections.value = collectionsData.map(c => ({ id: c.id, name: c.name }));
     materials.value = materialsData.map(m => ({ id: m.id, name: m.name }));
+    features.value = featuresData.map(f => ({ id: f.id, name: f.name }));
     artisanFavs.value = favsData.map(f => f.sku);
     
-    // Load thumbnails
-    loadThumbnails(productsResult.products);
+    // Fetch products based on current filters
+    await fetchProducts();
   } catch (err) {
     console.error('Failed to fetch dashboard data:', err);
     error.value = 'Failed to load dashboard data. Please try again later.';
@@ -160,6 +170,32 @@ const isDiscountActive = (product: Product) => {
 };
 
 onMounted(() => {
+  // Read feature, category, and collection query params and initialize filters
+  const currentRoute = router.currentRoute.value;
+  if (currentRoute.query.feature) {
+    selectedFeature.value = currentRoute.query.feature as string;
+  }
+  if (currentRoute.query.category) {
+    selectedCategory.value = currentRoute.query.category as string;
+  }
+  if (currentRoute.query.collection) {
+    selectedCollection.value = currentRoute.query.collection as string;
+  }
+  if (currentRoute.query.material) {
+    selectedMaterial.value = currentRoute.query.material as string;
+  }
+  
+  fetchData();
+});
+
+// Watch for changes that require a complete refresh (resetting pagination)
+watch([selectedCategory, selectedCollection, selectedMaterial, selectedFeature], () => {
+  currentPage.value = 1;
+  fetchData();
+});
+
+// Watch for pagination changes
+watch(currentPage, () => {
   fetchData();
 });
 </script>
@@ -201,6 +237,14 @@ onMounted(() => {
           <select v-model="selectedMaterial" @change="currentPage = 1">
             <option value="">Material</option>
             <option v-for="opt in materials" :key="opt.id" :value="opt.id">{{ opt.name }}</option>
+          </select>
+          <span class="material-icons-outlined">expand_more</span>
+        </div>
+
+        <div class="select-wrapper">
+          <select v-model="selectedFeature" @change="currentPage = 1">
+            <option value="">Feature</option>
+            <option v-for="opt in features" :key="opt.id" :value="opt.id">{{ opt.name }}</option>
           </select>
           <span class="material-icons-outlined">expand_more</span>
         </div>
