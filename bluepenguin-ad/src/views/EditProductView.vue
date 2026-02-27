@@ -552,6 +552,7 @@ const handleDelete = async () => {
                   class="choice-label card selected readonly"
                 >
                   {{ features.find(f => f.id === code)?.name || code }}
+                  <span v-if="features.find(f => f.id === code)" class="code-suffix">({{ code }})</span>
                 </div>
               </div>
               <p v-else class="text-muted mt-4">No features assigned to this product.</p>

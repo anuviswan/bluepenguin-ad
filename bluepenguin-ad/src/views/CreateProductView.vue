@@ -504,6 +504,7 @@ const setPrimaryImage = (index: number) => {
                 @click="toggleFeature(f.id)"
               >
                 {{ f.name }}
+                <span class="code-suffix">({{ f.id }})</span>
               </div>
             </div>
           </div>
