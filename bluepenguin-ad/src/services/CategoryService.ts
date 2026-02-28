@@ -5,6 +5,7 @@ export interface Category {
     name: string;
     productCount: number;
     isActive: boolean;
+    isFeatured: boolean;
 }
 
 export class CategoryService {
@@ -14,8 +15,9 @@ export class CategoryService {
             const categories = response.map(item => ({
                 id: item.rowKey || item.id || Math.random().toString(),
                 name: item.title || item.name || 'Unknown Category',
-                productCount: item.productCount || 0,
-                isActive: item.isActive ?? true
+                productCount: item.productCount || item.itemCount || 0,
+                isActive: item.isActive ?? true,
+                isFeatured: item.isFeatured ?? false
             }));
 
             return categories;

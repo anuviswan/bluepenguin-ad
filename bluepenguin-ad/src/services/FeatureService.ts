@@ -29,7 +29,7 @@ export class FeatureService {
                 id: item.featureId || item.rowKey || item.id || Math.random().toString(),
                 name: item.featureName || item.title || item.name || 'Unknown Feature',
                 symbolicText: item.symbolic || item.symbolicText,
-                productCount: item.productCount || 0,
+                productCount: item.itemCount || item.productCount || 0,
                 isActive: item.isActive ?? true,
             }));
 

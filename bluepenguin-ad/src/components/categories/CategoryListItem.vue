@@ -1,10 +1,6 @@
 <script setup lang="ts">
-interface Category {
-  id: string;
-  name: string;
-  productCount: number;
-  isActive: boolean;
-}
+import type { Category } from '../../services/CategoryService';
+import { useRouter } from 'vue-router';
 
 const props = defineProps<{
   category: Category;
@@ -15,7 +11,6 @@ const emit = defineEmits<{
   (e: 'toggle-featured', category: Category): void
 }>();
 
-import { useRouter } from 'vue-router';
 const router = useRouter();
 
 const handleItemClick = () => {

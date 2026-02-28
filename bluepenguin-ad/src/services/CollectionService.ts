@@ -14,7 +14,7 @@ export class CollectionService {
             const collections = response.map(item => ({
                 id: item.collectionId || item.rowKey || item.id || Math.random().toString(),
                 name: item.collectionName || item.title || item.name || 'Unknown Collection',
-                productCount: item.productCount || 0,
+                productCount: item.itemCount || item.productCount || 0,
                 isActive: item.isActive ?? true,
             }));
 
@@ -54,5 +54,3 @@ export class CollectionService {
         }
     }
 }
-
-

@@ -14,7 +14,7 @@ export class MaterialService {
             const materials = response.map(item => ({
                 id: item.rowKey || item.id || Math.random().toString(),
                 name: item.title || item.name || 'Unknown Material',
-                productCount: item.productCount || 0,
+                productCount: item.itemCount || item.productCount || 0,
                 isActive: item.isActive ?? true
             }));
 
