@@ -3,6 +3,7 @@ import { ref, onMounted } from 'vue';
 import MainLayout from '../components/layout/MainLayout.vue';
 import MaterialListItem from '../components/materials/MaterialListItem.vue';
 import { MaterialService, type Material } from '../services/MaterialService';
+import { ProductService } from '../services/ProductService';
 
 const materials = ref<Material[]>([]);
 const isLoading = ref(true);

@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router';
 import MainLayout from '../components/layout/MainLayout.vue';
 import FeatureListItem from '../components/features/FeatureListItem.vue';
 import { FeatureService, type Feature } from '../services/FeatureService';
+import { ProductService } from '../services/ProductService';
 
 const router = useRouter();
 const features = ref<Feature[]>([]);

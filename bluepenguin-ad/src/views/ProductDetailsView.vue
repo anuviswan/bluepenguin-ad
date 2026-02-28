@@ -8,7 +8,6 @@ import { CategoryService, type Category } from '../services/CategoryService';
 import { CollectionService, type Collection } from '../services/CollectionService';
 import { MaterialService, type Material } from '../services/MaterialService';
 import { FileUploadService } from '../services/FileUploadService';
-import { ArtisanFavService } from '../services/ArtisanFavService';
 import DeleteConfirmModal from '../components/shared/DeleteConfirmModal.vue';
 
 const route = useRoute();
@@ -44,17 +43,19 @@ const fetchProductAndMetadata = async () => {
     // Once we have product data, we can stop showing the main loading spinner
     isLoading.value = false;
 
-    // Fetch metadata in background
+    // Map bundled metadata parameters
+    productImages.value = productData.images ? productData.images.map((i: any) => i.imageId) : [];
+    
+    const primaryImage = productData.images ? productData.images.find((i: any) => i.isPrimary) : null;
+    primaryImageId.value = primaryImage ? primaryImage.imageId : null;
+    isArtisanFav.value = !!productData.isArtisanFav;
+
+    // Fetch categorical metadata in background
     Promise.all([
       FeatureService.getAll().then(res => features.value = res).catch(e => console.warn('Features fetch failed', e)),
       CategoryService.getAll().then(res => categories.value = res).catch(e => console.warn('Categories fetch failed', e)),
       CollectionService.getAll().then(res => collections.value = res).catch(e => console.warn('Collections fetch failed', e)),
-      MaterialService.getAll().then(res => materials.value = res).catch(e => console.warn('Materials fetch failed', e)),
-      FileUploadService.getAllImagesForSku(currentSku).then(res => productImages.value = res).catch(e => console.warn('Images fetch failed', e)),
-      FileUploadService.getPrimaryImageIdForSku(currentSku).then(res => primaryImageId.value = res).catch(e => console.warn('Primary image fetch failed', e)),
-      ArtisanFavService.getAll().then(res => {
-        isArtisanFav.value = res.some(fav => fav.sku === currentSku);
-      }).catch(e => console.warn('Artisan Favs fetch failed', e))
+      MaterialService.getAll().then(res => materials.value = res).catch(e => console.warn('Materials fetch failed', e))
     ]);
   } catch (err) {
     console.error('ProductDetailsView: Fatal fetch error:', err);

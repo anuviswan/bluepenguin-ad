@@ -97,25 +97,28 @@ const fetchData = async () => {
   isLoading.value = true;
   error.value = null;
   try {
-    const [catData, collData, matData, featData, productData, imagesData, favsData] = await Promise.all([
+    const [productData, catData, collData, matData, featData] = await Promise.all([
+      ProductService.getBySku(skuId),
       CategoryService.getAll(),
       CollectionService.getAll(),
       MaterialService.getAll(),
-      FeatureService.getAll(),
-      ProductService.getBySku(skuId),
-      FileUploadService.getAllImagesForSku(skuId),
-      ArtisanFavService.getAll()
+      FeatureService.getAll()
     ]);
     
     categories.value = catData;
     collections.value = collData;
     materials.value = matData;
     features.value = featData;
-    existingImages.value = imagesData;
     
-    const isFav = favsData.some(fav => fav.sku === skuId);
+    // Extract images from productData payload directly
+    const prodImages = productData.images || [];
+    existingImages.value = prodImages.map((img: any) => img.imageId);
+    
+    const primaryImg = prodImages.find((img: any) => img.isPrimary);
+    primaryImageId.value = primaryImg ? primaryImg.imageId : null;
+    
+    const isFav = !!productData.isArtisanFav;
     originalIsArtisanFav.value = isFav;
-    primaryImageId.value = await FileUploadService.getPrimaryImageIdForSku(skuId);
     
     // Fill the form with existing product data
     product.value = {

@@ -33,8 +33,7 @@ const isLoading = ref(true);
 const fetchStats = async () => {
   isLoading.value = true;
   try {
-    const [productsResult, collections, materials] = await Promise.all([
-      ProductService.getAll(1, 100).catch(e => { console.error('Products fetch error', e); return { products: [], totalCount: 0 }; }),
+    const [collections, materials] = await Promise.all([
       CollectionService.getAll().catch(e => { console.error('Collections fetch error', e); return []; }),
       MaterialService.getAll().catch(e => { console.error('Materials fetch error', e); return []; })
     ]);
@@ -45,16 +44,26 @@ const fetchStats = async () => {
       value: o.date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })
     }));
 
-    console.log('Dashboard stats data:', { 
-      productsCount: productsResult.products.length, 
-      collectionsCount: collections.length, 
-      materialsCount: materials.length,
-      occasionsCount: upcomingOccasions.length
-    });
-
-    const products = productsResult.products;
+    // Products will be injected via ProductTable emitted event.
+    // We just initialize the baseline stats here.
+    const collectionsCount = collections.length;
     
-    // Group by material and count
+    // Default placeholder until the product table loads its data and propagates it up
+    summaryStats.value = [
+      { title: 'Materials Used', list: [], icon: 'texture' },
+      { title: 'Out of Stock', value: '0', subtitle: 'Needs Restock', icon: 'report_problem', iconBgColor: '#fff5f5' },
+      { title: 'Upcoming Occasions', list: occasionList, subtitle: 'Kerala Festivals', icon: 'event' },
+      { title: 'Recently & Status', value: '0', subtitle: 'Drafts', icon: 'history' },
+    ];
+  } catch (error) {
+    console.error('Failed to fetch dashboard stats:', error);
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+const handleProductsLoaded = (products: any[], materials: {id: string, name: string}[]) => {
+    // Group by material and count from the provided list
     const materialCounts: Record<string, number> = {};
     products.forEach(p => {
       const mat = p.material || '-';
@@ -70,11 +79,9 @@ const fetchStats = async () => {
       .slice(0, 5); // Show top 5 materials
 
     const outOfStockCount = products.filter(p => p.stock === 0).length;
-    const collectionsCount = collections.length;
-    // For 'Recently & Status', we'll just use a subset or placeholder for now, 
-    // but let's count products added recently if possible. 
-    // Since we don't have createdDate, let's just use total count or keep as is.
-    const totalCount = productsResult.totalCount;
+
+    // Preserve existing Upcoming Occasions
+    const occasionStat = summaryStats.value.find(s => s.title === 'Upcoming Occasions');
 
     summaryStats.value = [
       { 
@@ -90,12 +97,7 @@ const fetchStats = async () => {
         icon: 'report_problem', 
         iconBgColor: '#fff5f5' 
       },
-      { 
-        title: 'Upcoming Occasions', 
-        list: occasionList,
-        subtitle: 'Kerala Festivals',
-        icon: 'event' 
-      },
+      occasionStat || { title: 'Upcoming Occasions', list: [], icon: 'event' },
       { 
         title: 'Recently & Status', 
         value: products.slice(0, 10).filter(p => p.status === 'Draft').length.toString(), 
@@ -103,11 +105,6 @@ const fetchStats = async () => {
         icon: 'history' 
       },
     ];
-  } catch (error) {
-    console.error('Failed to fetch dashboard stats:', error);
-  } finally {
-    isLoading.value = false;
-  }
 };
 
 onMounted(() => {
@@ -126,7 +123,7 @@ onMounted(() => {
         />
       </div>
 
-      <ProductTable />
+      <ProductTable @products-loaded="handleProductsLoaded" />
     </div>
   </MainLayout>
 </template>
