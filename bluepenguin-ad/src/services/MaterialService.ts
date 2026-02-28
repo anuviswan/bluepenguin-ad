@@ -18,18 +18,6 @@ export class MaterialService {
                 isActive: item.isActive ?? true
             }));
 
-            // Fetch product counts dynamically since the getall API doesn't return them
-            await Promise.allSettled(materials.map(async (material: Material) => {
-                try {
-                    const searchRes = await api.post<any>('/api/Product/search', {
-                        selectedMaterials: [material.id]
-                    }, { params: { page: '1', pageSize: '1' } });
-                    material.productCount = searchRes?.totalCount || 0;
-                } catch (e) {
-                    console.warn(`Could not fetch count for material ${material.id}`);
-                }
-            }));
-
             return materials;
         } catch (error) {
             console.error('Failed to fetch materials:', error);

@@ -6,8 +6,6 @@ import { CategoryService } from '../../services/CategoryService';
 import { CollectionService } from '../../services/CollectionService';
 import { MaterialService } from '../../services/MaterialService';
 import { FeatureService } from '../../services/FeatureService';
-import { FileUploadService } from '../../services/FileUploadService';
-import { ArtisanFavService } from '../../services/ArtisanFavService';
 
 const products = ref<Product[]>([]);
 const totalCount = ref(0);
@@ -16,8 +14,8 @@ const collections = ref<{id: string, name: string}[]>([]);
 const materials = ref<{id: string, name: string}[]>([]);
 const features = ref<{id: string, name: string}[]>([]);
 const statuses = ref<string[]>(['Status', 'In Stock', 'Out of Stock']);
-const productThumbnails = ref<Record<string, string | null>>({});
-const artisanFavs = ref<string[]>([]);
+
+const emit = defineEmits(['products-loaded']);
 
 const router = useRouter();
 
@@ -69,31 +67,19 @@ const prevPage = () => setPage(currentPage.value - 1);
 const fetchProducts = async () => {
   isLoading.value = true;
   try {
-    const hasDropdownFilters = selectedCategory.value || selectedCollection.value || selectedMaterial.value || selectedFeature.value;
+    const filters = {
+      category: selectedCategory.value || undefined,
+      collection: selectedCollection.value || undefined,
+      material: selectedMaterial.value || undefined,
+      feature: selectedFeature.value || undefined
+    };
 
-    let total;
-    let data;
+    const res = await ProductService.search(filters, currentPage.value, pageSize.value);
+    
+    products.value = res.products;
+    totalCount.value = res.totalCount;
 
-    if (hasDropdownFilters) {
-       const filters = {
-          category: selectedCategory.value || undefined,
-          collection: selectedCollection.value || undefined,
-          material: selectedMaterial.value || undefined,
-          feature: selectedFeature.value || undefined
-       };
-       const res = await ProductService.search(filters, currentPage.value, pageSize.value);
-       data = res.products;
-       total = res.totalCount;
-    } else {
-       const res = await ProductService.getAll(currentPage.value, pageSize.value);
-       data = res.products;
-       total = res.totalCount;
-    }
-
-    products.value = data;
-    totalCount.value = total;
-    // Load thumbnails for the visible products
-    loadThumbnails(data);
+    emit('products-loaded', res.products, materials.value);
   } catch (err) {
     console.error('Failed to fetch products:', err);
     error.value = 'Failed to load products.';
@@ -102,41 +88,21 @@ const fetchProducts = async () => {
   }
 };
 
-const loadThumbnails = async (productList: Product[]) => {
-  // Reset or just update the visible ones
-  // For better performance, we only fetch for products we don't have yet if they are in the current list
-  const fetchPromises = productList.map(async (product) => {
-    const sku = product.sku || 'N/A';
-    if (!productThumbnails.value[sku]) {
-      try {
-        const url = await FileUploadService.getThumbnailUrl(sku);
-        productThumbnails.value[sku] = url;
-      } catch (err) {
-        console.warn(`Failed to fetch thumbnail for ${sku}`, err);
-        productThumbnails.value[sku] = null;
-      }
-    }
-  });
-  await Promise.all(fetchPromises);
-};
-
 const fetchData = async () => {
   isLoading.value = true;
   error.value = null;
   try {
-    const [categoriesData, collectionsData, materialsData, featuresData, favsData] = await Promise.all([
+    const [categoriesData, collectionsData, materialsData, featuresData] = await Promise.all([
       CategoryService.getAll(),
       CollectionService.getAll(),
       MaterialService.getAll(),
-      FeatureService.getAll(),
-      ArtisanFavService.getAll()
+      FeatureService.getAll()
     ]);
 
     categories.value = categoriesData.map(c => ({ id: c.id, name: c.name }));
     collections.value = collectionsData.map(c => ({ id: c.id, name: c.name }));
     materials.value = materialsData.map(m => ({ id: m.id, name: m.name }));
     features.value = featuresData.map(f => ({ id: f.id, name: f.name }));
-    artisanFavs.value = favsData.map(f => f.sku);
     
     // Fetch products based on current filters
     await fetchProducts();
@@ -169,6 +135,8 @@ const isDiscountActive = (product: Product) => {
   return new Date(product.discountExpiryDate) > new Date();
 };
 
+let isInitialized = false;
+
 onMounted(() => {
   // Read feature, category, and collection query params and initialize filters
   const currentRoute = router.currentRoute.value;
@@ -185,18 +153,24 @@ onMounted(() => {
     selectedMaterial.value = currentRoute.query.material as string;
   }
   
-  fetchData();
+  fetchData().then(() => {
+    isInitialized = true;
+  });
 });
 
 // Watch for changes that require a complete refresh (resetting pagination)
-watch([selectedCategory, selectedCollection, selectedMaterial, selectedFeature], () => {
+watch([selectedCategory, selectedCollection, selectedMaterial, selectedFeature, searchQuery], () => {
+  if (!isInitialized) return;
   currentPage.value = 1;
-  fetchData();
+  fetchProducts(); // Replace fetchData with fetchProducts to avoid re-fetching categories, collections, etc.
 });
 
 // Watch for pagination changes
-watch(currentPage, () => {
-  fetchData();
+watch(currentPage, (newVal, oldVal) => {
+  if (!isInitialized) return;
+  if (newVal !== oldVal) {
+    fetchProducts();
+  }
 });
 </script>
 
@@ -214,11 +188,11 @@ watch(currentPage, () => {
       <div class="filter-group">
         <div class="search-box">
           <span class="material-icons-outlined">search</span>
-          <input type="text" placeholder="Search..." v-model="searchQuery" @input="currentPage = 1" />
+          <input type="text" placeholder="Search..." v-model="searchQuery" />
         </div>
         
         <div class="select-wrapper">
-          <select v-model="selectedCategory" @change="currentPage = 1">
+          <select v-model="selectedCategory">
             <option value="">Category</option>
             <option v-for="opt in categories" :key="opt.id" :value="opt.id">{{ opt.name }}</option>
           </select>
@@ -226,7 +200,7 @@ watch(currentPage, () => {
         </div>
 
         <div class="select-wrapper">
-          <select v-model="selectedCollection" @change="currentPage = 1">
+          <select v-model="selectedCollection">
             <option value="">Collection</option>
             <option v-for="opt in collections" :key="opt.id" :value="opt.id">{{ opt.name }}</option>
           </select>
@@ -234,7 +208,7 @@ watch(currentPage, () => {
         </div>
 
         <div class="select-wrapper">
-          <select v-model="selectedMaterial" @change="currentPage = 1">
+          <select v-model="selectedMaterial">
             <option value="">Material</option>
             <option v-for="opt in materials" :key="opt.id" :value="opt.id">{{ opt.name }}</option>
           </select>
@@ -242,7 +216,7 @@ watch(currentPage, () => {
         </div>
 
         <div class="select-wrapper">
-          <select v-model="selectedFeature" @change="currentPage = 1">
+          <select v-model="selectedFeature">
             <option value="">Feature</option>
             <option v-for="opt in features" :key="opt.id" :value="opt.id">{{ opt.name }}</option>
           </select>
@@ -250,7 +224,7 @@ watch(currentPage, () => {
         </div>
 
         <div class="select-wrapper">
-          <select v-model="selectedStatus" @change="currentPage = 1">
+          <select v-model="selectedStatus">
             <option v-for="opt in statuses" :key="opt" :value="opt">{{ opt }}</option>
           </select>
           <span class="material-icons-outlined">expand_more</span>
@@ -286,7 +260,7 @@ watch(currentPage, () => {
                 <tr v-for="product in filteredProducts" :key="product.sku || product.name" @click="router.push(`/products/${product.sku || 'N/A'}`)" class="clickable-row">
             <td>
               <div class="thumbnail-wrapper">
-                <img v-if="product.sku && productThumbnails[product.sku]" :src="productThumbnails[product.sku]!" alt="Thumbnail" class="thumbnail" />
+                <img v-if="product.primaryImageUrl" :src="product.primaryImageUrl" alt="Thumbnail" class="thumbnail" />
                 <div v-else class="thumbnail-placeholder">
                   <span class="material-icons-outlined">image</span>
                 </div>
@@ -296,7 +270,7 @@ watch(currentPage, () => {
             <td>
               <div style="display: flex; align-items: center; gap: 8px;">
                 <span class="product-name">{{ product.name }}</span>
-                <span v-if="artisanFavs.includes(product.sku!)" class="artisan-badge" title="Artisan's Favorite">
+                <span v-if="product.isArtisanFav" class="artisan-badge" title="Artisan's Favorite">
                   <span class="material-icons-outlined">star</span>
                 </span>
               </div>

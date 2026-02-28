@@ -33,18 +33,6 @@ export class FeatureService {
                 isActive: item.isActive ?? true,
             }));
 
-            // Fetch product counts dynamically since the getall API doesn't return them
-            await Promise.allSettled(features.map(async (feature: Feature) => {
-                try {
-                    const searchRes = await api.post<any>('/api/Product/search', {
-                        selectedFeatures: [feature.id]
-                    }, { params: { page: '1', pageSize: '1' } });
-                    feature.productCount = searchRes?.totalCount || 0;
-                } catch (e) {
-                    console.warn(`Could not fetch count for feature ${feature.id}`);
-                }
-            }));
-
             return features;
         } catch (error) {
             console.error('Failed to fetch features:', error);
