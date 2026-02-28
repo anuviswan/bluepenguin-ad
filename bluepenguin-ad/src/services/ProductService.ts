@@ -18,6 +18,8 @@ export interface Product {
     status: string;
     stock?: number;
     isArtisanFav?: boolean;
+    primaryImageUrl?: string;
+    images?: Array<{ imageId: string, imageUrl?: string | null, isPrimary: boolean }>;
 }
 
 export class ProductService {
@@ -54,7 +56,9 @@ export class ProductService {
                     yearCode: item.yearCode || 0,
                     sequenceCode: item.sequenceCode || extractedSeq,
                     status: (item.stock || 0) > 0 ? 'In Stock' : 'Out of Stock',
-                    stock: item.stock || 0
+                    stock: item.stock || 0,
+                    isArtisanFav: item.isArtisanFav || false,
+                    primaryImageUrl: item.primaryImageUrl || undefined
                 };
             });
 
@@ -71,11 +75,12 @@ export class ProductService {
         pageSize: number = 10
     ): Promise<{ products: Product[], totalCount: number }> {
         try {
-            const tempSearchParam: any = {};
-            if (filters.category) tempSearchParam.selectedCategories = [filters.category];
-            if (filters.material) tempSearchParam.selectedMaterials = [filters.material];
-            if (filters.collection) tempSearchParam.selectedCollections = [filters.collection];
-            if (filters.feature) tempSearchParam.selectedFeatures = [filters.feature];
+            const tempSearchParam: any = {
+                selectedCategories: (filters.category && filters.category.trim() !== '') ? [filters.category] : [],
+                selectedMaterials: (filters.material && filters.material.trim() !== '') ? [filters.material] : [],
+                selectedCollections: (filters.collection && filters.collection.trim() !== '') ? [filters.collection] : [],
+                selectedFeatures: (filters.feature && filters.feature.trim() !== '') ? [filters.feature] : []
+            };
 
             const response = await api.post<{ items: any[], totalCount?: number } | any>('/api/Product/search', tempSearchParam, {
                 params: {
@@ -107,7 +112,9 @@ export class ProductService {
                     yearCode: item.yearCode || 0,
                     sequenceCode: item.sequenceCode || extractedSeq,
                     status: (item.stock || 0) > 0 ? 'In Stock' : 'Out of Stock',
-                    stock: item.stock || 0
+                    stock: item.stock || 0,
+                    isArtisanFav: item.isArtisanFav || false,
+                    primaryImageUrl: item.primaryImageUrl || undefined
                 };
             });
 
@@ -173,7 +180,10 @@ export class ProductService {
                 yearCode: item.yearCode || 0,
                 sequenceCode: item.sequenceCode || extractedSeq,
                 status: (item.stock || 0) > 0 ? 'In Stock' : 'Out of Stock',
-                stock: item.stock || 0
+                stock: item.stock || 0,
+                isArtisanFav: item.isArtisanFav || false,
+                primaryImageUrl: item.primaryImageUrl || undefined,
+                images: Array.isArray(item.images) ? item.images : []
             };
         } catch (error) {
             console.error(`Failed to fetch product with SKU ${sku}:`, error);

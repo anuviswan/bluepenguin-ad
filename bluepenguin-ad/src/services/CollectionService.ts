@@ -14,20 +14,8 @@ export class CollectionService {
             const collections = response.map(item => ({
                 id: item.collectionId || item.rowKey || item.id || Math.random().toString(),
                 name: item.collectionName || item.title || item.name || 'Unknown Collection',
-                productCount: item.productCount || 0,
+                productCount: item.itemCount || item.productCount || 0,
                 isActive: item.isActive ?? true,
-            }));
-
-            // Fetch product counts dynamically since the getall API doesn't return them
-            await Promise.allSettled(collections.map(async (collection: Collection) => {
-                try {
-                    const searchRes = await api.post<any>('/api/Product/search', {
-                        selectedCollections: [collection.id]
-                    }, { params: { page: '1', pageSize: '1' } });
-                    collection.productCount = searchRes?.totalCount || 0;
-                } catch (e) {
-                    console.warn(`Could not fetch count for collection ${collection.id}`);
-                }
             }));
 
             return collections;
@@ -66,5 +54,3 @@ export class CollectionService {
         }
     }
 }
-
-

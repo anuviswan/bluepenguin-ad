@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router';
 import MainLayout from '../components/layout/MainLayout.vue';
 import CollectionListItem from '../components/collections/CollectionListItem.vue';
 import { CollectionService, type Collection } from '../services/CollectionService';
+import { ProductService } from '../services/ProductService';
 
 const router = useRouter();
 const collections = ref<Collection[]>([]);
