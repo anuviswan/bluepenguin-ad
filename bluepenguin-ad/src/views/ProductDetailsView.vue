@@ -251,6 +251,10 @@ const handleDelete = async () => {
                   <label>Year / Sequence</label>
                   <span>{{ product.yearCode }} / {{ product.sequenceCode }}</span>
                 </div>
+                <div class="info-item">
+                  <label>Stock</label>
+                  <span>{{ product.stock }}</span>
+                </div>
               </div>
             </div>
 
