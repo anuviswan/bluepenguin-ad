@@ -2,7 +2,7 @@
   <aside class="sidebar">
     <div class="brand">
       <div class="logo-container">
-        <img src="../../assets/Logo 3.png" alt="Blue Penguin Logo" class="brand-logo" />
+        <img src="../../assets/Logo.jpeg" alt="Blue Penguin Logo" class="brand-logo" />
       </div>
     </div>
 

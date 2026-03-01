@@ -4,8 +4,7 @@
     <div class="login-card">
       <div class="login-header">
         <div class="logo">
-          <span class="logo-icon">🐧</span>
-          <h1 class="logo-text">Blue Penguin</h1>
+          <img src="../assets/Logo.jpeg" alt="Blue Penguin Logo" class="login-logo" />
         </div>
         <p class="subtitle">Management Portal</p>
       </div>
@@ -160,20 +159,13 @@ const handleLogin = async () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.75rem;
   margin-bottom: 0.5rem;
 }
 
-.logo-icon {
-  font-size: 2.5rem;
-}
-
-.logo-text {
-  font-size: 1.75rem;
-  font-weight: 800;
-  color: #fff;
-  letter-spacing: -0.025em;
-  margin: 0;
+.login-logo {
+  max-width: 180px;
+  height: auto;
+  border-radius: 12px;
 }
 
 .subtitle {
