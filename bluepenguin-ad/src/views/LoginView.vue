@@ -4,7 +4,7 @@
     <div class="login-card">
       <div class="login-header">
         <div class="logo">
-          <img src="../assets/Logo.jpeg" alt="Blue Penguin Logo" class="login-logo" />
+          <img src="../assets/Admin Panel.png" alt="Blue Penguin Logo" class="login-logo" />
         </div>
         <p class="subtitle">Management Portal</p>
       </div>
@@ -49,7 +49,7 @@
       </form>
 
       <div class="login-footer">
-        <p>&copy; 2026 Blue Penguin Brands</p>
+        <p>&copy; 2026 Blue Penguin</p>
       </div>
     </div>
   </div>
