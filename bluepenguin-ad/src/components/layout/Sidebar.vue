@@ -2,7 +2,8 @@
   <aside class="sidebar">
     <div class="brand">
       <div class="logo-container">
-        <img src="../../assets/Logo.jpeg" alt="Blue Penguin Logo" class="brand-logo" />
+        <img src="../../assets/logo.png" alt="Blue Penguin Logo" class="brand-logo" />
+        <span class="brand-name">Blue Penguin</span>
       </div>
     </div>
 
@@ -79,15 +80,16 @@ const handleLogout = () => {
   height: var(--topbar-height);
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   padding: 16px 24px;
+  gap: 12px;
 }
 
 .logo-container {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 100%;
+  width: auto;
 }
 
 .brand-logo {
@@ -97,9 +99,11 @@ const handleLogout = () => {
 }
 
 .brand-name {
-  font-size: 18px;
-  font-weight: 700;
+  font-family: 'Questrial', sans-serif;
+  font-size: 20px;
+  font-weight: 400;
   color: var(--primary-color);
+  white-space: nowrap;
 }
 
 .nav-menu {
