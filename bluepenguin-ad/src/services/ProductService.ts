@@ -70,7 +70,14 @@ export class ProductService {
     }
 
     static async search(
-        filters: { category?: string; material?: string; collection?: string; feature?: string },
+        filters: { 
+            category?: string; 
+            material?: string; 
+            collection?: string; 
+            feature?: string;
+            searchQuery?: string;
+            sortOrder?: number;
+        },
         page: number = 1,
         pageSize: number = 10
     ): Promise<{ products: Product[], totalCount: number }> {
@@ -79,14 +86,23 @@ export class ProductService {
                 selectedCategories: (filters.category && filters.category.trim() !== '') ? [filters.category] : [],
                 selectedMaterials: (filters.material && filters.material.trim() !== '') ? [filters.material] : [],
                 selectedCollections: (filters.collection && filters.collection.trim() !== '') ? [filters.collection] : [],
-                selectedFeatures: (filters.feature && filters.feature.trim() !== '') ? [filters.feature] : []
+                selectedFeatures: (filters.feature && filters.feature.trim() !== '') ? [filters.feature] : [],
+                partialProductName: filters.searchQuery || undefined,
+                sortOrder: filters.sortOrder ?? 0
             };
 
+            const queryParams: any = {
+                page: page.toString(),
+                pageSize: pageSize.toString(),
+                sortOrder: (filters.sortOrder ?? 0).toString()
+            };
+
+            if (filters.searchQuery && filters.searchQuery.trim() !== '') {
+                queryParams.partialProductName = filters.searchQuery;
+            }
+
             const response = await api.post<{ items: any[], totalCount?: number } | any>('/api/Product/search', tempSearchParam, {
-                params: {
-                    page: page.toString(),
-                    pageSize: pageSize.toString()
-                }
+                params: queryParams
             });
 
             const items = Array.isArray(response) ? response : (response.items || []);
