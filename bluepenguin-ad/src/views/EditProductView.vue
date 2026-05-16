@@ -69,7 +69,8 @@ const newItemSpec = ref('');
 
 const addCareItem = () => {
   if (newItemCare.value.trim() && product.value.productCare) {
-    product.value.productCare.push(newItemCare.value.trim());
+    const lines = newItemCare.value.split('\n').filter(line => line.trim() !== '');
+    product.value.productCare.push(...lines.map(line => line.trim()));
     newItemCare.value = '';
   }
 };
@@ -82,7 +83,8 @@ const removeCareItem = (index: number) => {
 
 const addSpecItem = () => {
   if (newItemSpec.value.trim() && product.value.specifications) {
-    product.value.specifications.push(newItemSpec.value.trim());
+    const lines = newItemSpec.value.split('\n').filter(line => line.trim() !== '');
+    product.value.specifications.push(...lines.map(line => line.trim()));
     newItemSpec.value = '';
   }
 };
@@ -509,11 +511,11 @@ const handleDelete = async () => {
             <div class="form-section">
               <label>Care Instructions</label>
               <div class="list-input-group flex gap-2">
-                <input v-model="newItemCare" type="text" placeholder="Add care instruction..." class="form-input" @keyup.enter="addCareItem" />
+                <textarea v-model="newItemCare" rows="2" placeholder="Add care instruction(s), newline separated..." class="form-input" @keyup.ctrl.enter="addCareItem"></textarea>
                 <button class="btn btn-primary" @click="addCareItem">Add</button>
               </div>
               <div class="items-list mt-4">
-                <div v-for="(item, index) in product.productCare" :key="index" class="list-item flex justify-between align-center p-3 mb-2 card">
+                <div v-for="(item, index) in product.productCare" :key="index" class="list-item flex justify-between align-center p-4 mb-3 card">
                   <span>{{ item }}</span>
                   <button class="btn-icon text-danger" @click="removeCareItem(index)">
                     <span class="material-icons-outlined">delete</span>
@@ -529,11 +531,11 @@ const handleDelete = async () => {
             <div class="form-section">
               <label>Specifications</label>
               <div class="list-input-group flex gap-2">
-                <input v-model="newItemSpec" type="text" placeholder="Add specification..." class="form-input" @keyup.enter="addSpecItem" />
+                <textarea v-model="newItemSpec" rows="2" placeholder="Add specification(s), newline separated..." class="form-input" @keyup.ctrl.enter="addSpecItem"></textarea>
                 <button class="btn btn-primary" @click="addSpecItem">Add</button>
               </div>
               <div class="items-list mt-4">
-                <div v-for="(item, index) in product.specifications" :key="index" class="list-item flex justify-between align-center p-3 mb-2 card">
+                <div v-for="(item, index) in product.specifications" :key="index" class="list-item flex justify-between align-center p-4 mb-3 card">
                   <span>{{ item }}</span>
                   <button class="btn-icon text-danger" @click="removeSpecItem(index)">
                     <span class="material-icons-outlined">delete</span>

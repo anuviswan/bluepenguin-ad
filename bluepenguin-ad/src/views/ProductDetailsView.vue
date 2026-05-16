@@ -219,7 +219,7 @@ const handleDelete = async () => {
 
             <div class="card p-6">
               <h3 class="section-title">General Information</h3>
-              <div class="info-grid mt-4">
+              <div class="info-grid mt-6">
                 <div class="info-item">
                   <label>SKU</label>
                   <span>{{ product.sku }}</span>
@@ -260,12 +260,12 @@ const handleDelete = async () => {
 
             <div class="card p-6">
               <h3 class="section-title">Description</h3>
-              <p class="description-text mt-4">{{ product.description || 'No description provided.' }}</p>
+              <p class="description-text mt-6">{{ product.description || 'No description provided.' }}</p>
             </div>
 
             <div class="card p-6">
               <h3 class="section-title">Features</h3>
-              <div v-if="productFeatures.length > 0" class="features-list mt-4 flex flex-wrap gap-2">
+              <div v-if="productFeatures.length > 0" class="features-list mt-6 flex flex-wrap gap-2">
                 <span v-for="feature in productFeatures" :key="feature.code" class="feature-tag">
                   {{ feature.name }}
                 </span>
@@ -278,7 +278,7 @@ const handleDelete = async () => {
           <div class="side-column flex-column gap-6">
             <div class="card p-6">
               <h3 class="section-title">Product Care</h3>
-              <ul v-if="product.productCare?.length" class="care-list mt-4">
+              <ul v-if="product.productCare?.length" class="care-list mt-6">
                 <li v-for="(instruction, index) in product.productCare" :key="index">
                   <span class="material-icons-outlined">check_circle</span>
                   {{ instruction }}
@@ -289,11 +289,12 @@ const handleDelete = async () => {
 
             <div class="card p-6">
               <h3 class="section-title">Specifications</h3>
-              <div v-if="product.specifications?.length" class="specs-list mt-4">
-                <div v-for="(spec, index) in product.specifications" :key="index" class="spec-item p-3 mb-2">
+              <ul v-if="product.specifications?.length" class="specs-list mt-6">
+                <li v-for="(spec, index) in product.specifications" :key="index">
+                  <span class="material-icons-outlined">label_important</span>
                   {{ spec }}
-                </div>
-              </div>
+                </li>
+              </ul>
               <p v-else class="text-muted mt-4">No specifications provided.</p>
             </div>
           </div>
@@ -500,16 +501,25 @@ const handleDelete = async () => {
 }
 
 .specs-list {
+  list-style: none;
+  padding: 0;
   display: flex;
   flex-direction: column;
+  gap: 12px;
 }
 
-.spec-item {
-  background-color: #fafafa;
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-sm);
+.specs-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
   font-size: 14px;
   color: var(--text-main);
+}
+
+.specs-list li .material-icons-outlined {
+  font-size: 18px;
+  color: var(--primary-color);
+  margin-top: 1px;
 }
 
 .badge {
