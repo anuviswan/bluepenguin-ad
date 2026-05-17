@@ -2,8 +2,7 @@
   <aside class="sidebar">
     <div class="brand">
       <div class="logo-container">
-        <img src="../../assets/logo.png" alt="Blue Penguin Logo" class="brand-logo" />
-        <span class="brand-name">Blue Penguin</span>
+        <img :src="logo64" :srcset="logoSrcset" alt="Blue Penguin Logo" class="brand-logo" />
       </div>
     </div>
 
@@ -30,6 +29,13 @@
 <script setup lang="ts">
 import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '../../stores/auth';
+
+import logo64 from '../../assets/logos/BP 64.png';
+import logo68 from '../../assets/logos/BP 68.png';
+import logo72 from '../../assets/logos/BP 72.png';
+import logo76 from '../../assets/logos/BP 76.png';
+
+const logoSrcset = `${logo64} 1x, ${logo68} 1.25x, ${logo72} 1.5x, ${logo76} 2x`;
 
 const route = useRoute();
 const router = useRouter();
@@ -96,14 +102,6 @@ const handleLogout = () => {
   max-width: 100%;
   max-height: 50px;
   object-fit: contain;
-}
-
-.brand-name {
-  font-family: 'Questrial', sans-serif;
-  font-size: 20px;
-  font-weight: 400;
-  color: var(--primary-color);
-  white-space: nowrap;
 }
 
 .nav-menu {
