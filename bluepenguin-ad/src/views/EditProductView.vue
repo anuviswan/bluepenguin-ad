@@ -62,6 +62,7 @@ const error = ref<string | null>(null);
 const successMessage = ref<string | null>(null);
 const isDeleteModalOpen = ref(false);
 const isDeleting = ref(false);
+const copiedField = ref<string | null>(null);
 
 // List item helpers
 const newItemCare = ref('');
@@ -147,6 +148,21 @@ const fetchData = async () => {
     error.value = 'Failed to load product details or options. Please try again.';
   } finally {
     isLoading.value = false;
+  }
+};
+
+const copyToClipboard = async (text: string | undefined, field: string) => {
+  if (!text) return;
+  try {
+    await navigator.clipboard.writeText(text);
+    copiedField.value = field;
+    setTimeout(() => {
+      if (copiedField.value === field) {
+        copiedField.value = null;
+      }
+    }, 2000);
+  } catch (err) {
+    console.error('Failed to copy!', err);
   }
 };
 
@@ -407,7 +423,14 @@ const handleDelete = async () => {
 
       <div class="page-header mt-4 flex justify-between align-center">
         <h2>Edit Product</h2>
-        <div v-if="product.sku" class="sku-badge">SKU: {{ product.sku }}</div>
+        <div v-if="product.sku" class="sku-badge flex align-center gap-2">
+          <span>SKU: {{ product.sku }}</span>
+          <button type="button" @click="copyToClipboard(product.sku, 'skuBadge')" class="btn-icon text-muted flex-center p-0" title="Copy SKU" style="width: 20px; height: 20px; border: none; background: transparent; cursor: pointer;">
+            <span class="material-icons-outlined" style="font-size: 16px;">
+              {{ copiedField === 'skuBadge' ? 'check' : 'content_copy' }}
+            </span>
+          </button>
+        </div>
       </div>
 
       <div v-if="isLoading" class="loading-state card p-12 mt-6 flex-center flex-column gap-4">
@@ -441,12 +464,26 @@ const handleDelete = async () => {
           <div v-if="activeTab === 'basic'" class="tab-pane">
             <div class="form-grid">
               <div class="form-section">
-                <label for="name">Product Name</label>
+                <label for="name" class="flex align-center gap-2">
+                  Product Name
+                  <button type="button" @click="copyToClipboard(product.name, 'name')" class="btn-icon text-muted p-0 flex align-center justify-center" title="Copy Product Name" style="width: 24px; height: 24px; border: none; background: transparent; cursor: pointer;">
+                    <span class="material-icons-outlined" style="font-size: 16px;">
+                      {{ copiedField === 'name' ? 'check' : 'content_copy' }}
+                    </span>
+                  </button>
+                </label>
                 <input id="name" v-model="product.name" type="text" placeholder="Product Name" class="form-input" />
               </div>
 
               <div class="form-section">
-                <label for="sku">SKU (Read-only)</label>
+                <label for="sku" class="flex align-center gap-2">
+                  SKU (Read-only)
+                  <button type="button" @click="copyToClipboard(product.sku, 'sku')" class="btn-icon text-muted p-0 flex align-center justify-center" title="Copy SKU" style="width: 24px; height: 24px; border: none; background: transparent; cursor: pointer;">
+                    <span class="material-icons-outlined" style="font-size: 16px;">
+                      {{ copiedField === 'sku' ? 'check' : 'content_copy' }}
+                    </span>
+                  </button>
+                </label>
                 <input id="sku" v-model="product.sku" type="text" class="form-input disabled" readonly />
               </div>
 

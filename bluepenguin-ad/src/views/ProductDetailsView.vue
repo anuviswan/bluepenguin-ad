@@ -26,6 +26,22 @@ const isLoading = ref(true);
 const error = ref<string | null>(null);
 const isDeleteModalOpen = ref(false);
 const isDeleting = ref(false);
+const copiedField = ref<string | null>(null);
+
+const copyToClipboard = async (text: string | undefined, field: string) => {
+  if (!text) return;
+  try {
+    await navigator.clipboard.writeText(text);
+    copiedField.value = field;
+    setTimeout(() => {
+      if (copiedField.value === field) {
+        copiedField.value = null;
+      }
+    }, 2000);
+  } catch (err) {
+    console.error('Failed to copy!', err);
+  }
+};
 
 const fetchProductAndMetadata = async () => {
   const currentSku = route.params.sku as string;
@@ -166,7 +182,14 @@ const handleDelete = async () => {
             <span class="material-icons-outlined">arrow_back</span>
           </button>
           <div class="title-with-badge">
-            <h2>{{ product?.name }}</h2>
+            <div class="flex align-center gap-2">
+              <h2 style="margin: 0;">{{ product?.name }}</h2>
+              <button v-if="product?.name" type="button" @click="copyToClipboard(product.name, 'name')" class="btn-icon text-muted flex-center p-0" title="Copy Product Name" style="width: 28px; height: 28px; border: none; background: transparent; cursor: pointer;">
+                <span class="material-icons-outlined" style="font-size: 20px;">
+                  {{ copiedField === 'name' ? 'check' : 'content_copy' }}
+                </span>
+              </button>
+            </div>
             <div v-if="isArtisanFav" class="artisan-badge-large" title="Artisan's Favorite">
               <span class="material-icons-outlined">star</span>
               Artisan Fav
@@ -222,7 +245,14 @@ const handleDelete = async () => {
               <div class="info-grid mt-6">
                 <div class="info-item">
                   <label>SKU</label>
-                  <span>{{ product.sku }}</span>
+                  <div class="flex align-center gap-2">
+                    <span>{{ product.sku }}</span>
+                    <button v-if="product?.sku" type="button" @click="copyToClipboard(product.sku, 'sku')" class="btn-icon text-muted flex-center p-0" title="Copy SKU" style="width: 20px; height: 20px; border: none; background: transparent; cursor: pointer;">
+                      <span class="material-icons-outlined" style="font-size: 16px;">
+                        {{ copiedField === 'sku' ? 'check' : 'content_copy' }}
+                      </span>
+                    </button>
+                  </div>
                 </div>
                 <div class="info-item">
                   <label>Price</label>
