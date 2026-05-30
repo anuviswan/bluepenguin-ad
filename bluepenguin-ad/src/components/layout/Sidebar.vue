@@ -30,10 +30,10 @@
 import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '../../stores/auth';
 
-import logo64 from '../../assets/logos/BP 64.png';
-import logo68 from '../../assets/logos/BP 68.png';
-import logo72 from '../../assets/logos/BP 72.png';
-import logo76 from '../../assets/logos/BP 76.png';
+import logo64 from '../../assets/logos/BP_64.png';
+import logo68 from '../../assets/logos/BP_68.png';
+import logo72 from '../../assets/logos/BP_72.png';
+import logo76 from '../../assets/logos/BP_76.png';
 
 const logoSrcset = `${logo64} 1x, ${logo68} 1.25x, ${logo72} 1.5x, ${logo76} 2x`;
 
