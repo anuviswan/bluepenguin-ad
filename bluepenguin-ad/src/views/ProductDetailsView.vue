@@ -26,6 +26,22 @@ const isLoading = ref(true);
 const error = ref<string | null>(null);
 const isDeleteModalOpen = ref(false);
 const isDeleting = ref(false);
+const copiedField = ref<string | null>(null);
+
+const copyToClipboard = async (text: string | undefined, field: string) => {
+  if (!text) return;
+  try {
+    await navigator.clipboard.writeText(text);
+    copiedField.value = field;
+    setTimeout(() => {
+      if (copiedField.value === field) {
+        copiedField.value = null;
+      }
+    }, 2000);
+  } catch (err) {
+    console.error('Failed to copy!', err);
+  }
+};
 
 const fetchProductAndMetadata = async () => {
   const currentSku = route.params.sku as string;
@@ -166,7 +182,14 @@ const handleDelete = async () => {
             <span class="material-icons-outlined">arrow_back</span>
           </button>
           <div class="title-with-badge">
-            <h2>{{ product?.name }}</h2>
+            <div class="flex align-center gap-2">
+              <h2 style="margin: 0;">{{ product?.name }}</h2>
+              <button v-if="product?.name" type="button" @click="copyToClipboard(product.name, 'name')" class="btn-icon text-muted flex-center p-0" title="Copy Product Name" style="width: 28px; height: 28px; border: none; background: transparent; cursor: pointer;">
+                <span class="material-icons-outlined" style="font-size: 20px;">
+                  {{ copiedField === 'name' ? 'check' : 'content_copy' }}
+                </span>
+              </button>
+            </div>
             <div v-if="isArtisanFav" class="artisan-badge-large" title="Artisan's Favorite">
               <span class="material-icons-outlined">star</span>
               Artisan Fav
@@ -219,10 +242,17 @@ const handleDelete = async () => {
 
             <div class="card p-6">
               <h3 class="section-title">General Information</h3>
-              <div class="info-grid mt-4">
+              <div class="info-grid mt-6">
                 <div class="info-item">
                   <label>SKU</label>
-                  <span>{{ product.sku }}</span>
+                  <div class="flex align-center gap-2">
+                    <span>{{ product.sku }}</span>
+                    <button v-if="product?.sku" type="button" @click="copyToClipboard(product.sku, 'sku')" class="btn-icon text-muted flex-center p-0" title="Copy SKU" style="width: 20px; height: 20px; border: none; background: transparent; cursor: pointer;">
+                      <span class="material-icons-outlined" style="font-size: 16px;">
+                        {{ copiedField === 'sku' ? 'check' : 'content_copy' }}
+                      </span>
+                    </button>
+                  </div>
                 </div>
                 <div class="info-item">
                   <label>Price</label>
@@ -260,12 +290,12 @@ const handleDelete = async () => {
 
             <div class="card p-6">
               <h3 class="section-title">Description</h3>
-              <p class="description-text mt-4">{{ product.description || 'No description provided.' }}</p>
+              <p class="description-text mt-6">{{ product.description || 'No description provided.' }}</p>
             </div>
 
             <div class="card p-6">
               <h3 class="section-title">Features</h3>
-              <div v-if="productFeatures.length > 0" class="features-list mt-4 flex flex-wrap gap-2">
+              <div v-if="productFeatures.length > 0" class="features-list mt-6 flex flex-wrap gap-2">
                 <span v-for="feature in productFeatures" :key="feature.code" class="feature-tag">
                   {{ feature.name }}
                 </span>
@@ -278,7 +308,7 @@ const handleDelete = async () => {
           <div class="side-column flex-column gap-6">
             <div class="card p-6">
               <h3 class="section-title">Product Care</h3>
-              <ul v-if="product.productCare?.length" class="care-list mt-4">
+              <ul v-if="product.productCare?.length" class="care-list mt-6">
                 <li v-for="(instruction, index) in product.productCare" :key="index">
                   <span class="material-icons-outlined">check_circle</span>
                   {{ instruction }}
@@ -289,11 +319,12 @@ const handleDelete = async () => {
 
             <div class="card p-6">
               <h3 class="section-title">Specifications</h3>
-              <div v-if="product.specifications?.length" class="specs-list mt-4">
-                <div v-for="(spec, index) in product.specifications" :key="index" class="spec-item p-3 mb-2">
+              <ul v-if="product.specifications?.length" class="specs-list mt-6">
+                <li v-for="(spec, index) in product.specifications" :key="index">
+                  <span class="material-icons-outlined">label_important</span>
                   {{ spec }}
-                </div>
-              </div>
+                </li>
+              </ul>
               <p v-else class="text-muted mt-4">No specifications provided.</p>
             </div>
           </div>
@@ -500,16 +531,25 @@ const handleDelete = async () => {
 }
 
 .specs-list {
+  list-style: none;
+  padding: 0;
   display: flex;
   flex-direction: column;
+  gap: 12px;
 }
 
-.spec-item {
-  background-color: #fafafa;
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-sm);
+.specs-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
   font-size: 14px;
   color: var(--text-main);
+}
+
+.specs-list li .material-icons-outlined {
+  font-size: 18px;
+  color: var(--primary-color);
+  margin-top: 1px;
 }
 
 .badge {

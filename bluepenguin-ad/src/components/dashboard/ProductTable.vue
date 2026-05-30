@@ -34,21 +34,32 @@ const selectedStatus = ref('Status');
 const currentPage = ref(1);
 const pageSize = ref(10);
 
-const filteredProducts = computed(() => {
-  // We still filter locally for now if search/filters are applied, 
-  // but we fetch based on pagination. 
-  // Note: True server-side filtering would require updated API parameters for search too.
-  return products.value.filter(product => {
-    // Search filter (Name or SKU)
-    const matchesSearch = !searchQuery.value || 
-      product.name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-      (product.sku?.toLowerCase().includes(searchQuery.value.toLowerCase()) ?? false);
+const hasActiveFilters = computed(() => {
+  return searchQuery.value !== '' || 
+    selectedCategory.value !== '' || 
+    selectedCollection.value !== '' || 
+    selectedMaterial.value !== '' || 
+    selectedFeature.value !== '' || 
+    selectedStatus.value !== 'Status';
+});
 
-    // Status filter
+const clearFilters = () => {
+  searchQuery.value = '';
+  selectedCategory.value = '';
+  selectedCollection.value = '';
+  selectedMaterial.value = '';
+  selectedFeature.value = '';
+  selectedStatus.value = 'Status';
+};
+
+const filteredProducts = computed(() => {
+  // Search and most filters are now handled server-side.
+  // Status filter remains local as it's not supported by the current search API.
+  return products.value.filter(product => {
     const matchesStatus = selectedStatus.value === 'Status' || 
       product.status === selectedStatus.value;
 
-    return matchesSearch && matchesStatus;
+    return matchesStatus;
   });
 });
 
@@ -71,7 +82,9 @@ const fetchProducts = async () => {
       category: selectedCategory.value || undefined,
       collection: selectedCollection.value || undefined,
       material: selectedMaterial.value || undefined,
-      feature: selectedFeature.value || undefined
+      feature: selectedFeature.value || undefined,
+      searchQuery: searchQuery.value || undefined,
+      sortOrder: 0 // Default to Newest
     };
 
     const res = await ProductService.search(filters, currentPage.value, pageSize.value);
@@ -229,6 +242,11 @@ watch(currentPage, (newVal, oldVal) => {
           </select>
           <span class="material-icons-outlined">expand_more</span>
         </div>
+
+        <button v-if="hasActiveFilters" class="btn-clear" @click="clearFilters" title="Clear all filters">
+          <span class="material-icons-outlined">filter_alt_off</span>
+          Clear Filters
+        </button>
       </div>
     </div>
 
@@ -578,5 +596,27 @@ td {
   border-radius: var(--radius-sm);
   font-size: 14px;
   color: var(--danger-color);
+}
+.btn-clear {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background-color: var(--primary-light);
+  color: var(--primary-color);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s;
+  height: 38px;
+}
+
+.btn-clear:hover {
+  background-color: #d0e3fc;
+  color: #1e3e6d;
+}
+
+.btn-clear .material-icons-outlined {
+  font-size: 18px;
 }
 </style>

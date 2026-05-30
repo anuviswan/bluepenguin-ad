@@ -62,6 +62,7 @@ const error = ref<string | null>(null);
 const successMessage = ref<string | null>(null);
 const isDeleteModalOpen = ref(false);
 const isDeleting = ref(false);
+const copiedField = ref<string | null>(null);
 
 // List item helpers
 const newItemCare = ref('');
@@ -69,7 +70,8 @@ const newItemSpec = ref('');
 
 const addCareItem = () => {
   if (newItemCare.value.trim() && product.value.productCare) {
-    product.value.productCare.push(newItemCare.value.trim());
+    const lines = newItemCare.value.split('\n').filter(line => line.trim() !== '');
+    product.value.productCare.push(...lines.map(line => line.trim()));
     newItemCare.value = '';
   }
 };
@@ -82,7 +84,8 @@ const removeCareItem = (index: number) => {
 
 const addSpecItem = () => {
   if (newItemSpec.value.trim() && product.value.specifications) {
-    product.value.specifications.push(newItemSpec.value.trim());
+    const lines = newItemSpec.value.split('\n').filter(line => line.trim() !== '');
+    product.value.specifications.push(...lines.map(line => line.trim()));
     newItemSpec.value = '';
   }
 };
@@ -145,6 +148,21 @@ const fetchData = async () => {
     error.value = 'Failed to load product details or options. Please try again.';
   } finally {
     isLoading.value = false;
+  }
+};
+
+const copyToClipboard = async (text: string | undefined, field: string) => {
+  if (!text) return;
+  try {
+    await navigator.clipboard.writeText(text);
+    copiedField.value = field;
+    setTimeout(() => {
+      if (copiedField.value === field) {
+        copiedField.value = null;
+      }
+    }, 2000);
+  } catch (err) {
+    console.error('Failed to copy!', err);
   }
 };
 
@@ -405,7 +423,14 @@ const handleDelete = async () => {
 
       <div class="page-header mt-4 flex justify-between align-center">
         <h2>Edit Product</h2>
-        <div v-if="product.sku" class="sku-badge">SKU: {{ product.sku }}</div>
+        <div v-if="product.sku" class="sku-badge flex align-center gap-2">
+          <span>SKU: {{ product.sku }}</span>
+          <button type="button" @click="copyToClipboard(product.sku, 'skuBadge')" class="btn-icon text-muted flex-center p-0" title="Copy SKU" style="width: 20px; height: 20px; border: none; background: transparent; cursor: pointer;">
+            <span class="material-icons-outlined" style="font-size: 16px;">
+              {{ copiedField === 'skuBadge' ? 'check' : 'content_copy' }}
+            </span>
+          </button>
+        </div>
       </div>
 
       <div v-if="isLoading" class="loading-state card p-12 mt-6 flex-center flex-column gap-4">
@@ -439,12 +464,26 @@ const handleDelete = async () => {
           <div v-if="activeTab === 'basic'" class="tab-pane">
             <div class="form-grid">
               <div class="form-section">
-                <label for="name">Product Name</label>
+                <label for="name" class="flex align-center gap-2">
+                  Product Name
+                  <button type="button" @click="copyToClipboard(product.name, 'name')" class="btn-icon text-muted p-0 flex align-center justify-center" title="Copy Product Name" style="width: 24px; height: 24px; border: none; background: transparent; cursor: pointer;">
+                    <span class="material-icons-outlined" style="font-size: 16px;">
+                      {{ copiedField === 'name' ? 'check' : 'content_copy' }}
+                    </span>
+                  </button>
+                </label>
                 <input id="name" v-model="product.name" type="text" placeholder="Product Name" class="form-input" />
               </div>
 
               <div class="form-section">
-                <label for="sku">SKU (Read-only)</label>
+                <label for="sku" class="flex align-center gap-2">
+                  SKU (Read-only)
+                  <button type="button" @click="copyToClipboard(product.sku, 'sku')" class="btn-icon text-muted p-0 flex align-center justify-center" title="Copy SKU" style="width: 24px; height: 24px; border: none; background: transparent; cursor: pointer;">
+                    <span class="material-icons-outlined" style="font-size: 16px;">
+                      {{ copiedField === 'sku' ? 'check' : 'content_copy' }}
+                    </span>
+                  </button>
+                </label>
                 <input id="sku" v-model="product.sku" type="text" class="form-input disabled" readonly />
               </div>
 
@@ -509,11 +548,11 @@ const handleDelete = async () => {
             <div class="form-section">
               <label>Care Instructions</label>
               <div class="list-input-group flex gap-2">
-                <input v-model="newItemCare" type="text" placeholder="Add care instruction..." class="form-input" @keyup.enter="addCareItem" />
+                <textarea v-model="newItemCare" rows="2" placeholder="Add care instruction(s), newline separated..." class="form-input" @keyup.ctrl.enter="addCareItem"></textarea>
                 <button class="btn btn-primary" @click="addCareItem">Add</button>
               </div>
               <div class="items-list mt-4">
-                <div v-for="(item, index) in product.productCare" :key="index" class="list-item flex justify-between align-center p-3 mb-2 card">
+                <div v-for="(item, index) in product.productCare" :key="index" class="list-item flex justify-between align-center p-4 mb-3 card">
                   <span>{{ item }}</span>
                   <button class="btn-icon text-danger" @click="removeCareItem(index)">
                     <span class="material-icons-outlined">delete</span>
@@ -529,11 +568,11 @@ const handleDelete = async () => {
             <div class="form-section">
               <label>Specifications</label>
               <div class="list-input-group flex gap-2">
-                <input v-model="newItemSpec" type="text" placeholder="Add specification..." class="form-input" @keyup.enter="addSpecItem" />
+                <textarea v-model="newItemSpec" rows="2" placeholder="Add specification(s), newline separated..." class="form-input" @keyup.ctrl.enter="addSpecItem"></textarea>
                 <button class="btn btn-primary" @click="addSpecItem">Add</button>
               </div>
               <div class="items-list mt-4">
-                <div v-for="(item, index) in product.specifications" :key="index" class="list-item flex justify-between align-center p-3 mb-2 card">
+                <div v-for="(item, index) in product.specifications" :key="index" class="list-item flex justify-between align-center p-4 mb-3 card">
                   <span>{{ item }}</span>
                   <button class="btn-icon text-danger" @click="removeSpecItem(index)">
                     <span class="material-icons-outlined">delete</span>
